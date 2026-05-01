@@ -11,9 +11,12 @@ import JournalView from './views/JournalView';
 import ProfileView from './views/ProfileView';
 import DailyRemindersView from './views/DailyRemindersView';
 import StreakPopup from './components/StreakPopup';
+import OnboardingView from './views/OnboardingView';
 
 function App() {
-  const [activeView, setActiveView] = useState<ViewId>('dashboard');
+  const [activeView, setActiveView] = useState<ViewId>(() => {
+    return localStorage.getItem('hasCompletedOnboarding') ? 'dashboard' : 'onboarding';
+  });
   const [sfxEnabled, setSfxEnabled] = useState(true);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
   const [streakCount, setStreakCount] = useState(7); // Example streak count
@@ -50,6 +53,11 @@ function App() {
     window.scrollTo(0, 0);
   }, []);
 
+  const handleCompleteOnboarding = useCallback(() => {
+    localStorage.setItem('hasCompletedOnboarding', 'true');
+    handleNavigate('dashboard');
+  }, [handleNavigate]);
+
   const handleStartCheckIn = useCallback(() => {
     setActiveView('check-in');
   }, []);
@@ -78,6 +86,8 @@ function App() {
         return <ProfileView sfxEnabled={sfxEnabled} onToggleSfx={handleToggleSfx} onNavigate={handleNavigate} />;
       case 'daily-reminders':
         return <DailyRemindersView onBack={() => handleNavigate('profile')} />;
+      case 'onboarding':
+        return <OnboardingView onComplete={handleCompleteOnboarding} />;
       default:
         return <DashboardView sfxEnabled={sfxEnabled} onStartCheckIn={handleStartCheckIn} />;
     }
@@ -86,14 +96,14 @@ function App() {
   return (
     <>
       <AmbientBackground />
-      {showStreakPopup && <StreakPopup streakCount={streakCount} onClose={handleClaimStreak} />}
+      {showStreakPopup && activeView !== 'onboarding' && <StreakPopup streakCount={streakCount} onClose={handleClaimStreak} />}
       <div
         id="app"
         className="relative flex flex-col mx-auto min-h-screen"
         style={{ maxWidth: 480, minHeight: '100dvh' }}
       >
         {renderView()}
-        <BottomNav activeView={activeView} onNavigate={handleNavigate} />
+        {activeView !== 'onboarding' && <BottomNav activeView={activeView} onNavigate={handleNavigate} />}
       </div>
     </>
   );
