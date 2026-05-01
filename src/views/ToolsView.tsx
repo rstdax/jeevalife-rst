@@ -1,10 +1,8 @@
-import { useState, useMemo } from 'react';
-import { isAndroid } from '../utils/performance';
+import { useState } from 'react';
 
 const ToolsView: React.FC = () => {
   const [waterValue, setWaterValue] = useState(1.5);
   const percentage = (waterValue / 4.0) * 100;
-  const android = useMemo(() => isAndroid(), []);
 
   return (
     <section
@@ -31,8 +29,7 @@ const ToolsView: React.FC = () => {
               borderRadius: '50%',
               border: '4px solid rgba(255,255,255,0.1)',
               background: 'rgba(0,0,0,0.3)',
-              boxShadow: android ? 'inset 0 0 10px rgba(0,0,0,0.3)' : 'inset 0 0 20px rgba(0,0,0,0.5)',
-              contain: 'paint',
+              boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)',
             }}
           >
             <div

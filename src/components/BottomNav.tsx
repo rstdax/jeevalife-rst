@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import type { ViewId } from '../types';
 import { sounds } from '../utils/audio';
 
@@ -15,7 +14,7 @@ const navItems: { target: ViewId; icon: string; isFab?: boolean }[] = [
   { target: 'profile', icon: 'fa-regular fa-user' },
 ];
 
-const BottomNav: React.FC<BottomNavProps> = memo(({ activeView, onNavigate }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate }) => {
   const handleClick = (target: ViewId) => {
     sounds.click();
     onNavigate(target);
@@ -32,8 +31,6 @@ const BottomNav: React.FC<BottomNavProps> = memo(({ activeView, onNavigate }) =>
         height: 70,
         borderRadius: 35,
         boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-        willChange: 'transform',
-        transform: 'translateX(-50%) translateZ(0)',
       }}
     >
       {navItems.map((item) => {
@@ -88,8 +85,6 @@ const BottomNav: React.FC<BottomNavProps> = memo(({ activeView, onNavigate }) =>
       })}
     </nav>
   );
-});
-
-BottomNav.displayName = 'BottomNav';
+};
 
 export default BottomNav;

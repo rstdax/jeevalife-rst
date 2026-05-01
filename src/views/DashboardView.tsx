@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { sounds, toggleTherapy } from '../utils/audio';
-import { isAndroid } from '../utils/performance';
 
 interface DashboardViewProps {
   sfxEnabled: boolean;
@@ -9,7 +8,6 @@ interface DashboardViewProps {
 
 const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckIn }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const android = useMemo(() => isAndroid(), []);
 
   const handlePlayTherapy = () => {
     if (!sfxEnabled) {
@@ -24,9 +22,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
     sounds.waterDrop();
     onStartCheckIn();
   };
-
-  // On Android: only 2 ripples, simpler gradient, no border
-  const rippleCount = android ? 2 : 3;
 
   return (
     <section
@@ -58,39 +53,29 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
         {/* Liquid CTA */}
         <div className="relative flex justify-center items-center mx-auto mb-10" style={{ width: 280, height: 280 }}>
           {/* Dynamic Ripple Waves */}
-          {Array.from({ length: rippleCount }, (_, i) => (
+          {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="absolute w-full h-full opacity-0 ripple-wave"
+              className="absolute w-full h-full opacity-0"
               style={{
-                background: android
-                  ? 'none'
-                  : 'radial-gradient(ellipse at center, transparent 60%, rgba(255, 255, 255, 0.12) 75%, transparent 85%)',
+                background: 'radial-gradient(ellipse at center, transparent 60%, rgba(255, 255, 255, 0.12) 75%, transparent 85%)',
                 border: '1px solid rgba(0, 242, 254, 0.2)',
-                boxShadow: android ? 'none' : '0 0 12px rgba(0, 242, 254, 0.1)',
-                animation: android
-                  ? `rippleOut 5s ease-out infinite`
-                  : `liquidWobble 6s linear infinite, rippleOut 5s ease-out infinite`,
-                animationDelay: android
-                  ? `${i * 2.5}s`
-                  : `0s, ${i * 1.67}s`,
-                willChange: 'transform, opacity',
+                boxShadow: '0 0 12px rgba(0, 242, 254, 0.1)',
+                animation: `liquidWobble 6s linear infinite, rippleOut 5s ease-out infinite`,
+                animationDelay: `0s, ${i * 1.67}s`,
               }}
             />
           ))}
 
           {/* Sub-surface Caustics & Glow */}
           <div
-            className="absolute pulse-glow"
+            className="absolute"
             style={{
               width: 190,
               height: 190,
               borderRadius: '50%',
               background: 'radial-gradient(circle, rgba(0, 242, 254, 0.15) 0%, transparent 60%)',
-              ...(android
-                ? { animation: 'pulseGlow 6s linear infinite' }
-                : { animation: 'pulseGlow 6s linear infinite' }),
-              willChange: 'transform, opacity',
+              animation: 'pulseGlow 6s linear infinite',
             }}
           />
 
@@ -98,34 +83,29 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
           <div
             id="btn-start-checkin"
             onClick={handleStartCheckIn}
-            className="relative z-2 flex justify-center items-center text-center cursor-pointer overflow-hidden liquid-cta"
+            className="relative z-2 flex justify-center items-center text-center cursor-pointer overflow-hidden"
             style={{
               width: 195,
               height: 195,
               borderRadius: '45% 55% 40% 60% / 55% 45% 60% 40%',
               background: 'rgba(255, 255, 255, 0.04)',
-              backdropFilter: android ? 'none' : 'blur(2px)',
-              WebkitBackdropFilter: android ? 'none' : 'blur(2px)',
+              backdropFilter: 'blur(2px)',
+              WebkitBackdropFilter: 'blur(2px)',
               border: 'none',
               outline: 'none',
-              boxShadow: android
-                ? `inset 6px 10px 15px rgba(255, 255, 255, 0.2),
-                   inset -8px -10px 20px rgba(0, 15, 20, 0.5),
-                   4px 12px 25px rgba(0, 0, 0, 0.4)`
-                : `inset 12px 18px 25px rgba(255, 255, 255, 0.25),
-                   inset -15px -20px 35px rgba(0, 15, 20, 0.6),
-                   inset 0px -45px 50px rgba(0, 5, 10, 0.4),
-                   8px 25px 45px rgba(0, 0, 0, 0.5)`,
-              animation: android
-                ? 'liquidWobbleGPU 4s ease-in-out infinite'
-                : 'liquidWobble 4s linear infinite',
+              boxShadow: `
+                inset 12px 18px 25px rgba(255, 255, 255, 0.25),
+                inset -15px -20px 35px rgba(0, 15, 20, 0.6),
+                inset 0px -45px 50px rgba(0, 5, 10, 0.4),
+                8px 25px 45px rgba(0, 0, 0, 0.5)
+              `,
+              animation: 'liquidWobble 4s linear infinite',
               transition: 'transform 0.4s var(--ease-spring), box-shadow 0.4s ease',
-              willChange: 'transform',
             }}
           >
             {/* Soft Primary Specular Highlight */}
             <div
-              className="absolute pointer-events-none specular-highlight"
+              className="absolute pointer-events-none"
               style={{
                 top: '6%',
                 left: '12%',
@@ -133,10 +113,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
                 height: '22%',
                 borderRadius: '50%',
                 background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.15) 55%, transparent 80%)',
-                filter: 'blur(3px)',
+                filter: 'blur(2.5px)',
                 transform: 'rotate(-20deg)',
-                // No animation on Android; static highlight looks fine
-                ...(android ? {} : { animation: 'specularFloat 4s linear infinite' }),
+                animation: 'specularFloat 4s linear infinite',
               }}
             />
 
@@ -165,12 +144,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
                 height: '18%',
                 borderRadius: '50%',
                 background: 'radial-gradient(ellipse at bottom, rgba(255, 255, 255, 0.2) 0%, transparent 75%)',
-                filter: android ? 'blur(3px)' : 'blur(5px)',
+                filter: 'blur(5px)',
               }}
             />
 
             {/* Text Layer - Blended inside water */}
-            <div className="flex flex-col items-center relative z-10" style={{ mixBlendMode: android ? 'normal' : 'overlay' }}>
+            <div className="flex flex-col items-center relative z-10" style={{ mixBlendMode: 'overlay' }}>
               <span className="text-xl font-bold block text-white/95" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.9)' }}>
                 60s Check-in
               </span>
