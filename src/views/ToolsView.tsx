@@ -36,10 +36,13 @@ const ToolsView: React.FC = () => {
               className="water-level absolute bottom-0 left-0 w-full transition-all duration-400"
               style={{
                 height: `${percentage}%`,
-                background: 'linear-gradient(to bottom, var(--color-cyan) 0%, #009efd 100%)',
+                background: 'linear-gradient(to bottom, transparent 0%, transparent 30px, var(--color-cyan) 30px, #009efd 100%)',
                 opacity: 0.9,
+                transform: 'translateY(28px)'
               }}
-            />
+            >
+              <div className="water-wave-3" />
+            </div>
             <div
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 font-extrabold text-4xl"
               style={{ fontFamily: 'var(--font-heading)', textShadow: '0 2px 5px rgba(0,0,0,0.5)' }}
