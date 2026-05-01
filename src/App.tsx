@@ -19,7 +19,7 @@ function App() {
   const [activeView, setActiveView] = useState<ViewId>('onboarding');
   const [sfxEnabled, setSfxEnabled] = useState(true);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
-  const [streakCount, setStreakCount] = useState(7); // Example streak count
+  const [streakCount] = useState(7); // Example streak count
 
   // Initialize audio on first user interaction
   useEffect(() => {
