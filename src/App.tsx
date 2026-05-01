@@ -9,6 +9,7 @@ import ToolsView from './views/ToolsView';
 import InsightsView from './views/InsightsView';
 import JournalView from './views/JournalView';
 import ProfileView from './views/ProfileView';
+import DailyRemindersView from './views/DailyRemindersView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('dashboard');
@@ -55,7 +56,9 @@ function App() {
       case 'journal':
         return <JournalView />;
       case 'profile':
-        return <ProfileView sfxEnabled={sfxEnabled} onToggleSfx={handleToggleSfx} />;
+        return <ProfileView sfxEnabled={sfxEnabled} onToggleSfx={handleToggleSfx} onNavigate={handleNavigate} />;
+      case 'daily-reminders':
+        return <DailyRemindersView onBack={() => handleNavigate('profile')} />;
       default:
         return <DashboardView sfxEnabled={sfxEnabled} onStartCheckIn={handleStartCheckIn} />;
     }

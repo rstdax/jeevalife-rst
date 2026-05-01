@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { sounds } from '../utils/audio';
+import type { ViewId } from '../types';
 
 interface ProfileViewProps {
   sfxEnabled: boolean;
   onToggleSfx: () => void;
+  onNavigate: (view: ViewId) => void;
 }
 
 const badges = [
@@ -30,7 +32,22 @@ const ToggleItem: React.FC<ToggleItemProps> = ({ label, active, onToggle }) => (
   </div>
 );
 
-const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx }) => {
+interface ActionItemProps {
+  label: string;
+  onClick: () => void;
+}
+
+const ActionItem: React.FC<ActionItemProps> = ({ label, onClick }) => (
+  <button
+    className="flex items-center justify-between text-base hover:translate-x-1 transition-transform duration-300 w-full"
+    onClick={onClick}
+  >
+    <span>{label}</span>
+    <i className="fa-solid fa-chevron-right text-[12px] text-muted" />
+  </button>
+);
+
+const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNavigate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('Rahul Sharma');
   const [bio, setBio] = useState('Level 4 Wellness Explorer');
@@ -214,7 +231,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx }) =>
           <h3 className="text-xs font-bold text-muted uppercase tracking-widest mb-1">Preferences</h3>
           <ToggleItem label="Dark Mode" active={true} onToggle={() => sounds.click()} />
           <ToggleItem label="Sound Effects" active={sfxEnabled} onToggle={handleToggleSfx} />
-          <ToggleItem label="Daily Reminders" active={false} onToggle={() => sounds.click()} />
+          <ActionItem label="Daily Reminders" onClick={() => { sounds.click(); onNavigate('daily-reminders'); }} />
         </div>
 
         {/* Information Section */}
