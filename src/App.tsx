@@ -14,12 +14,14 @@ import StreakPopup from './components/StreakPopup';
 import OnboardingView from './views/OnboardingView';
 import SignInView from './views/SignInView';
 import SignUpView from './views/SignUpView';
+import OnboardingDetailsView from './views/OnboardingDetailsView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('onboarding');
   const [sfxEnabled, setSfxEnabled] = useState(true);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
   const [streakCount] = useState(7); // Example streak count
+  const [onboardingName, setOnboardingName] = useState('');
 
   // Initialize audio on first user interaction
   useEffect(() => {
@@ -58,6 +60,15 @@ function App() {
     handleNavigate('dashboard');
   }, [handleNavigate]);
 
+  const handleSignUpSuccess = useCallback((name?: string, isGoogle?: boolean) => {
+    if (isGoogle) {
+      setOnboardingName("Alex Morgan"); // Mocked Google Name
+    } else if (name) {
+      setOnboardingName(name);
+    }
+    handleNavigate('onboarding-details');
+  }, [handleNavigate]);
+
   const handleStartCheckIn = useCallback(() => {
     setActiveView('check-in');
   }, []);
@@ -87,17 +98,19 @@ function App() {
       case 'daily-reminders':
         return <DailyRemindersView onBack={() => handleNavigate('profile')} />;
       case 'onboarding':
-        return <OnboardingView onNavigate={handleNavigate} />;
+        return <OnboardingView onNavigate={handleNavigate} onGoogleSignUp={() => handleSignUpSuccess(undefined, true)} />;
       case 'sign-in':
         return <SignInView onBack={() => handleNavigate('onboarding')} onLogin={handleCompleteOnboarding} />;
       case 'sign-up':
-        return <SignUpView onBack={() => handleNavigate('onboarding')} onSignUp={handleCompleteOnboarding} />;
+        return <SignUpView onBack={() => handleNavigate('onboarding')} onSignUp={handleSignUpSuccess} />;
+      case 'onboarding-details':
+        return <OnboardingDetailsView onComplete={handleCompleteOnboarding} initialName={onboardingName} />;
       default:
         return <DashboardView sfxEnabled={sfxEnabled} onStartCheckIn={handleStartCheckIn} />;
     }
   };
 
-  const isAuthView = activeView === 'onboarding' || activeView === 'sign-in' || activeView === 'sign-up';
+  const isAuthView = activeView === 'onboarding' || activeView === 'sign-in' || activeView === 'sign-up' || activeView === 'onboarding-details';
 
   return (
     <>

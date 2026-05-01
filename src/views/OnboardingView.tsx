@@ -4,6 +4,7 @@ import type { ViewId } from '../types';
 
 interface OnboardingViewProps {
   onNavigate: (view: ViewId) => void;
+  onGoogleSignUp: () => void;
 }
 
 const slides = [
@@ -27,7 +28,7 @@ const slides = [
   },
 ];
 
-const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate }) => {
+const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate, onGoogleSignUp }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const handleNext = () => {
@@ -97,7 +98,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate }) => {
               Sign Up Free
             </button>
             <button 
-              onClick={() => { sounds.click(); onNavigate('dashboard'); }}
+              onClick={() => { sounds.click(); onGoogleSignUp(); }}
               className="w-full py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 border border-white/20 transition-transform duration-300 transform hover:scale-[1.02] glass-panel"
             >
               <i className="fa-brands fa-google text-[var(--color-blue, #60a5fa)]" /> Continue with Google

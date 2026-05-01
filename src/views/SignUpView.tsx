@@ -3,7 +3,7 @@ import { sounds } from '../utils/audio';
 
 interface SignUpViewProps {
   onBack: () => void;
-  onSignUp: () => void;
+  onSignUp: (name?: string, isGoogle?: boolean) => void;
 }
 
 const SignUpView: React.FC<SignUpViewProps> = ({ onBack, onSignUp }) => {
@@ -14,7 +14,7 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onBack, onSignUp }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sounds.success();
-    onSignUp();
+    onSignUp(name, false);
   };
 
   return (
@@ -87,7 +87,7 @@ const SignUpView: React.FC<SignUpViewProps> = ({ onBack, onSignUp }) => {
 
         <button 
           type="button"
-          onClick={() => { sounds.success(); onSignUp(); }}
+          onClick={() => { sounds.success(); onSignUp("Alex Morgan", true); }}
           className="w-full py-4 rounded-xl font-bold text-white flex items-center justify-center gap-3 border border-white/10 transition-transform duration-300 transform hover:scale-[1.02] glass-panel"
         >
           <i className="fa-brands fa-google text-[var(--color-blue, #60a5fa)] text-lg" />
