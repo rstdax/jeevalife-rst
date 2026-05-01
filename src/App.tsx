@@ -12,6 +12,8 @@ import ProfileView from './views/ProfileView';
 import DailyRemindersView from './views/DailyRemindersView';
 import StreakPopup from './components/StreakPopup';
 import OnboardingView from './views/OnboardingView';
+import PhoneSignInView from './views/PhoneSignInView';
+import OtpVerifyView from './views/OtpVerifyView';
 import OnboardingDetailsView from './views/OnboardingDetailsView';
 
 function App() {
@@ -58,6 +60,11 @@ function App() {
     handleNavigate('dashboard');
   }, [handleNavigate]);
 
+  const handleCompleteOnboardingDetails = useCallback(() => {
+    localStorage.setItem('hasCompletedOnboarding', 'true');
+    handleNavigate('check-in');
+  }, [handleNavigate]);
+
   const handleSignUpSuccess = useCallback((name?: string, isGoogle?: boolean) => {
     if (isGoogle) {
       setOnboardingName("Alex Morgan"); // Mocked Google Name
@@ -97,14 +104,18 @@ function App() {
         return <DailyRemindersView onBack={() => handleNavigate('profile')} />;
       case 'onboarding':
         return <OnboardingView onNavigate={handleNavigate} onGoogleSignUp={() => handleSignUpSuccess(undefined, true)} />;
+      case 'phone-sign-in':
+        return <PhoneSignInView onBack={() => handleNavigate('onboarding')} onContinue={() => handleNavigate('otp-verify')} />;
+      case 'otp-verify':
+        return <OtpVerifyView onBack={() => handleNavigate('phone-sign-in')} onVerify={() => handleNavigate('onboarding-details')} />;
       case 'onboarding-details':
-        return <OnboardingDetailsView onComplete={handleCompleteOnboarding} initialName={onboardingName} />;
+        return <OnboardingDetailsView onComplete={handleCompleteOnboardingDetails} initialName={onboardingName} />;
       default:
         return <DashboardView sfxEnabled={sfxEnabled} onStartCheckIn={handleStartCheckIn} />;
     }
   };
 
-  const isAuthView = activeView === 'onboarding' || activeView === 'onboarding-details';
+  const isAuthView = activeView === 'onboarding' || activeView === 'phone-sign-in' || activeView === 'otp-verify' || activeView === 'onboarding-details';
 
   return (
     <>
