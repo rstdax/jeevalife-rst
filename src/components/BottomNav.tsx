@@ -6,10 +6,10 @@ interface BottomNavProps {
   onNavigate: (view: ViewId) => void;
 }
 
-const navItems: { target: ViewId; icon: string; isFab?: boolean }[] = [
+const navItems: { target: ViewId; icon: string }[] = [
   { target: 'dashboard', icon: 'fa-solid fa-house' },
   { target: 'insights', icon: 'fa-solid fa-chart-line' },
-  { target: 'tools', icon: 'fa-solid fa-droplet', isFab: true },
+  { target: 'tools', icon: 'fa-solid fa-droplet' },
   { target: 'journal', icon: 'fa-solid fa-book' },
   { target: 'profile', icon: 'fa-regular fa-user' },
 ];
@@ -35,29 +35,6 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate }) => {
     >
       {navItems.map((item) => {
         const isActive = activeView === item.target || (item.target === 'tools' && activeView === 'check-in');
-
-        if (item.isFab) {
-          return (
-            <div
-              key={item.target}
-              id={`nav-${item.target}`}
-              onClick={() => handleClick(item.target)}
-              className="cursor-pointer flex justify-center items-center text-white text-2xl"
-              style={{
-                background: 'linear-gradient(135deg, var(--color-cyan), #009efd)',
-                width: 55,
-                height: 55,
-                borderRadius: '50%',
-                transform: `translateY(-20px)${isActive ? '' : ''}`,
-                border: '2px solid rgba(255,255,255,0.2)',
-                boxShadow: '0 10px 20px rgba(0, 242, 254, 0.3)',
-                transition: 'transform 0.2s var(--ease-spring)',
-              }}
-            >
-              <i className={item.icon} />
-            </div>
-          );
-        }
 
         return (
           <div
