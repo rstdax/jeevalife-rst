@@ -10,10 +10,13 @@ import InsightsView from './views/InsightsView';
 import JournalView from './views/JournalView';
 import ProfileView from './views/ProfileView';
 import DailyRemindersView from './views/DailyRemindersView';
+import StreakPopup from './components/StreakPopup';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('dashboard');
   const [sfxEnabled, setSfxEnabled] = useState(true);
+  const [showStreakPopup, setShowStreakPopup] = useState(false);
+  const [streakCount, setStreakCount] = useState(7); // Example streak count
 
   // Initialize audio on first user interaction
   useEffect(() => {
@@ -23,6 +26,22 @@ function App() {
     };
     document.body.addEventListener('click', handler, { once: true });
     return () => document.body.removeEventListener('click', handler);
+  }, []);
+
+  // Check for daily check-in
+  useEffect(() => {
+    const lastCheckin = localStorage.getItem('lastCheckinDate');
+    const today = new Date().toDateString();
+    
+    if (lastCheckin !== today) {
+      const timer = setTimeout(() => setShowStreakPopup(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleClaimStreak = useCallback(() => {
+    localStorage.setItem('lastCheckinDate', new Date().toDateString());
+    setShowStreakPopup(false);
   }, []);
 
   const handleNavigate = useCallback((view: ViewId) => {
@@ -67,6 +86,7 @@ function App() {
   return (
     <>
       <AmbientBackground />
+      {showStreakPopup && <StreakPopup streakCount={streakCount} onClose={handleClaimStreak} />}
       <div
         id="app"
         className="relative flex flex-col mx-auto min-h-screen"
