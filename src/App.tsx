@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { ViewId } from './types';
 import { initAudio, sounds } from './utils/audio';
+import { applyPlatformClasses } from './utils/performance';
 import AmbientBackground from './components/AmbientBackground';
 import BottomNav from './components/BottomNav';
 import DashboardView from './views/DashboardView';
@@ -13,6 +14,11 @@ import ProfileView from './views/ProfileView';
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('dashboard');
   const [sfxEnabled, setSfxEnabled] = useState(true);
+
+  // Detect platform and apply CSS class overrides for Android perf
+  useEffect(() => {
+    applyPlatformClasses();
+  }, []);
 
   // Initialize audio on first user interaction
   useEffect(() => {

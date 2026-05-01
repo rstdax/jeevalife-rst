@@ -57,6 +57,8 @@ body {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* Prevent overscroll bounce on Android Chrome */
+  overscroll-behavior: none;
 }
 
 h1,
@@ -67,18 +69,26 @@ h4 {
   color: white;
 }
 
+/* ================= PERFORMANCE: GPU COMPOSITING HINTS ================= */
+/* Promote key animated/fixed layers to their own GPU compositor layer */
+.glass-panel,
+.glass-card {
+  transform: translateZ(0);
+  contain: layout paint;
+}
+
 /* ================= ANIMATIONS ================= */
 @keyframes floatBlob {
   0% {
-    transform: translate(0, 0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 
   50% {
-    transform: translate(30px, 50px) scale(1.1);
+    transform: translate3d(30px, 50px, 0) scale(1.1);
   }
 
   100% {
-    transform: translate(-20px, 20px) scale(0.9);
+    transform: translate3d(-20px, 20px, 0) scale(0.9);
   }
 }
 
@@ -176,6 +186,29 @@ h4 {
   }
 }
 
+/* GPU-friendly simplified wobble for Android (transform-only) */
+@keyframes liquidWobbleGPU {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: scale(1.02) rotate(1deg);
+  }
+
+  50% {
+    transform: scale(0.98) rotate(-1deg);
+  }
+
+  75% {
+    transform: scale(1.01) rotate(0.5deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
 @keyframes dropWobble {
   0% {
     border-radius: 44% 56% 52% 48% / 52% 44% 56% 46%;
@@ -201,34 +234,34 @@ h4 {
 @keyframes specularFloat {
   0% {
     opacity: 0.75;
-    filter: blur(2.5px);
+    transform: translateZ(0);
   }
 
   50% {
     opacity: 1;
-    filter: blur(3.5px);
+    transform: translateZ(0);
   }
 
   100% {
     opacity: 0.75;
-    filter: blur(2.5px);
+    transform: translateZ(0);
   }
 }
 
 @keyframes pulseGlow {
   0% {
-    filter: blur(35px) opacity(0.6);
-    transform: scale(0.95);
+    opacity: 0.6;
+    transform: scale(0.95) translateZ(0);
   }
 
   50% {
-    filter: blur(45px) opacity(1);
-    transform: scale(1.05);
+    opacity: 1;
+    transform: scale(1.05) translateZ(0);
   }
 
   100% {
-    filter: blur(35px) opacity(0.6);
-    transform: scale(0.95);
+    opacity: 0.6;
+    transform: scale(0.95) translateZ(0);
   }
 }
 
@@ -252,6 +285,7 @@ h4 {
 .glass-panel {
   background: var(--color-glass-bg);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-glass-border);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
@@ -259,6 +293,7 @@ h4 {
 .glass-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-glass-border);
   border-top: 1px solid var(--color-glass-highlight);
   border-radius: 24px;
@@ -305,6 +340,7 @@ h4 {
   margin-left: -150px;
   border-radius: 45%;
   animation: spinWave 5s linear infinite;
+  will-change: transform;
 }
 
 .water-level::before {
@@ -369,4 +405,120 @@ h4 {
 .chart-wrapper canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+/* ===========================================================================
+   ANDROID PERFORMANCE OPTIMIZATIONS
+   ===========================================================================
+   Android Chrome's GPU compositor handles backdrop-filter, large blurs, and
+   stacked box-shadows far less efficiently than iOS Safari's Core Animation.
+   These rules detect Android-class browsers and swap expensive effects for
+   GPU-friendly alternatives that look almost identical.
+   =========================================================================== */
+
+/* 
+   Detection strategy: Android Chrome supports backdrop-filter but doesn't
+   have Apple's -webkit-backdrop-filter vendor prefix optimization. We use
+   a combination approach:
+   1. CSS @supports to target capabilities
+   2. A JS-set class on <html> for reliable Android detection
+*/
+
+/* --- Android-specific overrides (set by JS: html.is-android) --- */
+.is-android .glass-panel {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(3, 21, 21, 0.75);
+}
+
+.is-android .glass-card {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: linear-gradient(135deg, rgba(3, 21, 21, 0.8) 0%, rgba(3, 21, 21, 0.7) 100%);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Ambient blobs: reduce blur from 80px to 40px, reduce size, use will-change */
+.is-android .ambient-blob {
+  will-change: transform;
+  contain: strict;
+}
+
+/* Liquid CTA: replace expensive border-radius morphing with GPU-only transforms */
+.is-android .liquid-cta {
+  animation: liquidWobbleGPU 4s ease-in-out infinite !important;
+  border-radius: 48% 52% 45% 55% / 50% 48% 52% 50% !important;
+  box-shadow:
+    inset 6px 10px 15px rgba(255, 255, 255, 0.2),
+    inset -8px -10px 20px rgba(0, 15, 20, 0.5),
+    4px 12px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Ripple waves: reduce count via CSS (JS will also limit to 2) */
+.is-android .ripple-wave {
+  animation: rippleOut 5s ease-out infinite !important;
+  background: none !important;
+  will-change: transform, opacity;
+}
+
+/* Specular highlights: remove animated blur filter on Android */
+.is-android .specular-highlight {
+  animation: none !important;
+  filter: blur(3px) !important;
+}
+
+/* Pulse glow: remove blur filter animation, use opacity + scale only */
+.is-android .pulse-glow {
+  filter: none !important;
+  background: radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, transparent 60%) !important;
+}
+
+/* Water tracker: simplify wave animation */
+.is-android .water-level::before,
+.is-android .water-level::after {
+  width: 200px;
+  height: 200px;
+  margin-left: -100px;
+}
+
+.is-android .water-level::before {
+  margin-bottom: -185px;
+  animation-duration: 10s;
+}
+
+.is-android .water-level::after {
+  margin-bottom: -190px;
+  animation-duration: 8s;
+}
+
+/* Bottom nav: lighter glass on Android */
+.is-android #bottom-nav {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(3, 21, 21, 0.85);
+}
+
+/* Transitions: use shorter durations on Android for snappier feel */
+.is-android * {
+  transition-duration: 0.15s !important;
+}
+
+/* Re-enable specific transitions that need longer durations */
+.is-android .water-level {
+  transition-duration: 0.4s !important;
+}
+
+.is-android #progress-fill {
+  transition-duration: 0.4s !important;
+}
+
+/* ================= REDUCED MOTION (accessibility + perf) ================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

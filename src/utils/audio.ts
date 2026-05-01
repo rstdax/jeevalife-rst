@@ -7,6 +7,11 @@ export function initAudio(): void {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     audioCtx = new AC();
   }
+  // Android Chrome often starts AudioContext in 'suspended' state
+  // Resume it on user interaction
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
 }
 
 function playTone(freq: number, type: OscillatorType, duration: number, volLevel: number = 0.1): void {
