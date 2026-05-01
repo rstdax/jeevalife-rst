@@ -2,30 +2,39 @@ import type { Question, JournalLog } from './types';
 
 export const questions: Question[] = [
   {
+    q: "How's your mood right now?",
+    opts: [
+      { e: "✨", t: "Radiant" },
+      { e: "😊", t: "Content" },
+      { e: "😔", t: "Low" },
+      { e: "😤", t: "Disturbed" },
+    ],
+  },
+  {
     q: "How is your energy flowing?",
     opts: [
-      { e: "🔋", t: "Empty" },
-      { e: "🪫", t: "Low" },
-      { e: "⚡", t: "Balanced" },
       { e: "🔥", t: "High" },
+      { e: "⚡", t: "Blended" },
+      { e: "🪫", t: "Sluggish" },
+      { e: "😮‍💨", t: "Exhausted" },
     ],
   },
   {
-    q: "What's occupying your mind?",
+    q: "What's your stress level?",
     opts: [
-      { e: "🌪️", t: "Chaos/Stress" },
-      { e: "📱", t: "Distractions" },
-      { e: "🧘", t: "Calm Focus" },
-      { e: "🚀", t: "Excitement" },
+      { e: "🧘", t: "Relaxed" },
+      { e: "😌", t: "Manageable" },
+      { e: "😬", t: "Tensed" },
+      { e: "🌊", t: "Overwhelmed" },
     ],
   },
   {
-    q: "How rested do you feel?",
+    q: "How was your sleep quality?",
     opts: [
-      { e: "😫", t: "Exhausted" },
-      { e: "🥱", t: "Groggy" },
-      { e: "😌", t: "Okay" },
-      { e: "✨", t: "Fully Restored" },
+      { e: "🔆", t: "Sharp" },
+      { e: "🙂", t: "Functional" },
+      { e: "😶‍🌫️", t: "Sculptured" },
+      { e: "🌫️", t: "Brown Fog" },
     ],
   },
 ];

@@ -52,17 +52,19 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
       <main>
         {/* Liquid CTA */}
         <div className="relative flex justify-center items-center mx-auto mb-10" style={{ width: 280, height: 280 }}>
-          {/* Dynamic Ripple Waves */}
-          {[0, 1, 2].map((i) => (
+          {/* Dynamic Ripple Waves (Overlapping Breathing Effect) */}
+          {[0, 1].map((i) => (
             <div
               key={i}
-              className="absolute w-full h-full opacity-0"
+              className="absolute opacity-0 pointer-events-none"
               style={{
+                width: 220,
+                height: 220,
                 background: 'radial-gradient(ellipse at center, transparent 60%, rgba(255, 255, 255, 0.12) 75%, transparent 85%)',
                 border: '1px solid rgba(0, 242, 254, 0.2)',
                 boxShadow: '0 0 12px rgba(0, 242, 254, 0.1)',
                 animation: `liquidWobble 6s linear infinite, rippleOut 5s ease-out infinite`,
-                animationDelay: `0s, ${i * 1.67}s`,
+                animationDelay: `0s, ${i * 2.5}s`,
               }}
             />
           ))}
@@ -79,7 +81,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
             }}
           />
 
-          {/* Hyper-realistic Morphing Water Droplet */}
+          {/* 2D Morphing Liquid Droplet */}
           <div
             id="btn-start-checkin"
             onClick={handleStartCheckIn}
@@ -88,72 +90,22 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
               width: 195,
               height: 195,
               borderRadius: '45% 55% 40% 60% / 55% 45% 60% 40%',
-              background: 'rgba(255, 255, 255, 0.04)',
-              backdropFilter: 'blur(2px)',
-              WebkitBackdropFilter: 'blur(2px)',
-              border: 'none',
-              outline: 'none',
-              boxShadow: `
-                inset 12px 18px 25px rgba(255, 255, 255, 0.25),
-                inset -15px -20px 35px rgba(0, 15, 20, 0.6),
-                inset 0px -45px 50px rgba(0, 5, 10, 0.4),
-                8px 25px 45px rgba(0, 0, 0, 0.5)
-              `,
+              background: 'var(--color-glass-bg)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid var(--color-glass-border)',
+              borderTop: '1px solid var(--color-glass-highlight)',
+              boxShadow: '0 15px 35px rgba(0,0,0,0.4)',
               animation: 'liquidWobble 4s linear infinite',
               transition: 'transform 0.4s var(--ease-spring), box-shadow 0.4s ease',
             }}
           >
-            {/* Soft Primary Specular Highlight */}
-            <div
-              className="absolute pointer-events-none"
-              style={{
-                top: '6%',
-                left: '12%',
-                width: '60%',
-                height: '22%',
-                borderRadius: '50%',
-                background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.15) 55%, transparent 80%)',
-                filter: 'blur(2.5px)',
-                transform: 'rotate(-20deg)',
-                animation: 'specularFloat 4s linear infinite',
-              }}
-            />
-
-            {/* Subtle Secondary Reflection */}
-            <div
-              className="absolute pointer-events-none"
-              style={{
-                top: '20%',
-                right: '10%',
-                width: '25%',
-                height: '12%',
-                borderRadius: '50%',
-                background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.4) 0%, transparent 70%)',
-                filter: 'blur(3px)',
-                transform: 'rotate(40deg)',
-              }}
-            />
-
-             {/* Internal Caustic Reflection (Bottom) */}
-             <div
-              className="absolute pointer-events-none"
-              style={{
-                bottom: '1%',
-                left: '10%',
-                width: '80%',
-                height: '18%',
-                borderRadius: '50%',
-                background: 'radial-gradient(ellipse at bottom, rgba(255, 255, 255, 0.2) 0%, transparent 75%)',
-                filter: 'blur(5px)',
-              }}
-            />
-
-            {/* Text Layer - Blended inside water */}
-            <div className="flex flex-col items-center relative z-10" style={{ mixBlendMode: 'overlay' }}>
-              <span className="text-xl font-bold block text-white/95" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.9)' }}>
+            {/* Text Layer */}
+            <div className="flex flex-col items-center relative z-10">
+              <span className="text-xl font-bold block text-white">
                 60s Check-in
               </span>
-              <span className="text-xs uppercase tracking-widest text-white/80" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}>
+              <span className="text-xs uppercase tracking-widest text-[var(--color-gold)] mt-1">
                 Tap to flow
               </span>
             </div>

@@ -41,9 +41,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate }) => {
             key={item.target}
             id={`nav-${item.target}`}
             onClick={() => handleClick(item.target)}
-            className={`relative cursor-pointer text-xl p-3 transition-all ${
-              isActive ? 'text-white -translate-y-[3px]' : 'text-gray-500'
-            }`}
+            className={`relative cursor-pointer text-xl p-3 transition-all ${isActive ? 'text-white -translate-y-[3px]' : 'text-gray-500'
+              }`}
             style={{ transition: 'all 0.3s var(--ease-spring)' }}
           >
             <i className={item.icon} />
