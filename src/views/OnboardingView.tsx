@@ -91,11 +91,11 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate, onGoogleSig
         ) : (
           <div className="w-full flex flex-col gap-3 animate-[fadeIn_0.5s_ease-out_forwards]">
             <button 
-              onClick={() => { sounds.click(); onNavigate('sign-up'); }}
+              onClick={() => { sounds.click(); onNavigate('onboarding-details'); }}
               className="w-full py-3.5 rounded-xl font-bold text-black transition-transform duration-300 transform hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.1)]"
               style={{ background: 'white' }}
             >
-              Sign Up Free
+              <i className="fa-solid fa-phone mr-2 opacity-50" /> Continue with Phone Number
             </button>
             <button 
               onClick={() => { sounds.click(); onGoogleSignUp(); }}
@@ -103,9 +103,6 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate, onGoogleSig
             >
               <i className="fa-brands fa-google text-[var(--color-blue, #60a5fa)]" /> Continue with Google
             </button>
-            <p className="text-sm text-muted mt-2">
-              Already have an account? <button onClick={() => { sounds.click(); onNavigate('sign-in'); }} className="text-white font-bold hover:underline transition-all">Log in</button>
-            </p>
           </div>
         )}
       </div>

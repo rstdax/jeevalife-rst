@@ -12,8 +12,6 @@ import ProfileView from './views/ProfileView';
 import DailyRemindersView from './views/DailyRemindersView';
 import StreakPopup from './components/StreakPopup';
 import OnboardingView from './views/OnboardingView';
-import SignInView from './views/SignInView';
-import SignUpView from './views/SignUpView';
 import OnboardingDetailsView from './views/OnboardingDetailsView';
 
 function App() {
@@ -99,10 +97,6 @@ function App() {
         return <DailyRemindersView onBack={() => handleNavigate('profile')} />;
       case 'onboarding':
         return <OnboardingView onNavigate={handleNavigate} onGoogleSignUp={() => handleSignUpSuccess(undefined, true)} />;
-      case 'sign-in':
-        return <SignInView onBack={() => handleNavigate('onboarding')} onLogin={handleCompleteOnboarding} />;
-      case 'sign-up':
-        return <SignUpView onBack={() => handleNavigate('onboarding')} onSignUp={handleSignUpSuccess} />;
       case 'onboarding-details':
         return <OnboardingDetailsView onComplete={handleCompleteOnboarding} initialName={onboardingName} />;
       default:
@@ -110,7 +104,7 @@ function App() {
     }
   };
 
-  const isAuthView = activeView === 'onboarding' || activeView === 'sign-in' || activeView === 'sign-up' || activeView === 'onboarding-details';
+  const isAuthView = activeView === 'onboarding' || activeView === 'onboarding-details';
 
   return (
     <>
