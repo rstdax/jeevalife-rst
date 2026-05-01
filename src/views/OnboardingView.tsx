@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { sounds } from '../utils/audio';
+import type { ViewId } from '../types';
 
 interface OnboardingViewProps {
-  onComplete: () => void;
+  onNavigate: (view: ViewId) => void;
 }
 
 const slides = [
@@ -26,16 +27,13 @@ const slides = [
   },
 ];
 
-const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
+const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const handleNext = () => {
     sounds.click();
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(prev => prev + 1);
-    } else {
-      sounds.success();
-      onComplete();
     }
   };
 
@@ -81,13 +79,34 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
         </div>
 
         {/* Action Button */}
-        <button 
-          onClick={handleNext}
-          className="w-full py-4 rounded-xl font-bold text-lg text-black transition-transform duration-300 transform hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-          style={{ background: 'white' }}
-        >
-          {currentSlide === slides.length - 1 ? 'Get Started' : 'Continue'}
-        </button>
+        {currentSlide < slides.length - 1 ? (
+          <button 
+            onClick={handleNext}
+            className="w-full py-4 rounded-xl font-bold text-lg text-black transition-transform duration-300 transform hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+            style={{ background: 'white' }}
+          >
+            Continue
+          </button>
+        ) : (
+          <div className="w-full flex flex-col gap-3 animate-[fadeIn_0.5s_ease-out_forwards]">
+            <button 
+              onClick={() => { sounds.click(); onNavigate('sign-up'); }}
+              className="w-full py-3.5 rounded-xl font-bold text-black transition-transform duration-300 transform hover:scale-[1.02] shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+              style={{ background: 'white' }}
+            >
+              Sign Up Free
+            </button>
+            <button 
+              onClick={() => { sounds.click(); onNavigate('dashboard'); }}
+              className="w-full py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 border border-white/20 transition-transform duration-300 transform hover:scale-[1.02] glass-panel"
+            >
+              <i className="fa-brands fa-google text-[var(--color-blue, #60a5fa)]" /> Continue with Google
+            </button>
+            <p className="text-sm text-muted mt-2">
+              Already have an account? <button onClick={() => { sounds.click(); onNavigate('sign-in'); }} className="text-white font-bold hover:underline transition-all">Log in</button>
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

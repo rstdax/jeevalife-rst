@@ -12,11 +12,11 @@ import ProfileView from './views/ProfileView';
 import DailyRemindersView from './views/DailyRemindersView';
 import StreakPopup from './components/StreakPopup';
 import OnboardingView from './views/OnboardingView';
+import SignInView from './views/SignInView';
+import SignUpView from './views/SignUpView';
 
 function App() {
-  const [activeView, setActiveView] = useState<ViewId>(() => {
-    return localStorage.getItem('hasCompletedOnboarding') ? 'dashboard' : 'onboarding';
-  });
+  const [activeView, setActiveView] = useState<ViewId>('onboarding');
   const [sfxEnabled, setSfxEnabled] = useState(true);
   const [showStreakPopup, setShowStreakPopup] = useState(false);
   const [streakCount, setStreakCount] = useState(7); // Example streak count
@@ -87,23 +87,29 @@ function App() {
       case 'daily-reminders':
         return <DailyRemindersView onBack={() => handleNavigate('profile')} />;
       case 'onboarding':
-        return <OnboardingView onComplete={handleCompleteOnboarding} />;
+        return <OnboardingView onNavigate={handleNavigate} />;
+      case 'sign-in':
+        return <SignInView onBack={() => handleNavigate('onboarding')} onLogin={handleCompleteOnboarding} />;
+      case 'sign-up':
+        return <SignUpView onBack={() => handleNavigate('onboarding')} onSignUp={handleCompleteOnboarding} />;
       default:
         return <DashboardView sfxEnabled={sfxEnabled} onStartCheckIn={handleStartCheckIn} />;
     }
   };
 
+  const isAuthView = activeView === 'onboarding' || activeView === 'sign-in' || activeView === 'sign-up';
+
   return (
     <>
       <AmbientBackground />
-      {showStreakPopup && activeView !== 'onboarding' && <StreakPopup streakCount={streakCount} onClose={handleClaimStreak} />}
+      {showStreakPopup && !isAuthView && <StreakPopup streakCount={streakCount} onClose={handleClaimStreak} />}
       <div
         id="app"
         className="relative flex flex-col mx-auto min-h-screen"
         style={{ maxWidth: 480, minHeight: '100dvh' }}
       >
         {renderView()}
-        {activeView !== 'onboarding' && <BottomNav activeView={activeView} onNavigate={handleNavigate} />}
+        {!isAuthView && <BottomNav activeView={activeView} onNavigate={handleNavigate} />}
       </div>
     </>
   );
