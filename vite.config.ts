@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   base: '/', // Using relative paths prevents asset loading mismatches on Firebase
@@ -8,6 +9,7 @@ export default defineConfig({
     minify: 'esbuild',
   },
   plugins: [
-    react()
+    tailwindcss(),
+    react(),
   ]
 })
