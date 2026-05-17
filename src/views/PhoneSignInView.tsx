@@ -4,6 +4,7 @@ import { sounds } from '../utils/audio';
 interface PhoneSignInViewProps {
   onBack: () => void;
   onContinue: (phone: string) => void;
+  error?: string;
 }
 
 const COUNTRIES = [
@@ -29,7 +30,7 @@ const formatPhone = (raw: string, format: string) => {
   return formatted;
 };
 
-const PhoneSignInView: React.FC<PhoneSignInViewProps> = ({ onBack, onContinue }) => {
+const PhoneSignInView: React.FC<PhoneSignInViewProps> = ({ onBack, onContinue, error }) => {
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
   const [rawPhone, setRawPhone] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -57,7 +58,9 @@ const PhoneSignInView: React.FC<PhoneSignInViewProps> = ({ onBack, onContinue })
     e.preventDefault();
     if (isValid) {
       sounds.success();
-      onContinue(`${selectedCountry.dialCode} ${formattedPhone}`);
+      // E.164 format: +[dialCode][digits] — no spaces or formatting
+      const e164 = `${selectedCountry.dialCode}${rawPhone}`;
+      onContinue(e164);
     }
   };
 
@@ -133,6 +136,9 @@ const PhoneSignInView: React.FC<PhoneSignInViewProps> = ({ onBack, onContinue })
           >
             Send OTP Code
           </button>
+          {error && (
+            <p className="text-center text-sm mt-2" style={{ color: '#EF4444' }}>{error}</p>
+          )}
         </form>
       </div>
     </section>

@@ -3,36 +3,36 @@ import { sounds } from '../utils/audio';
 
 interface OtpVerifyViewProps {
   onBack: () => void;
-  onVerify: () => void;
+  onVerify: (token: string) => void;
+  phone?: string;
+  error?: string;
 }
 
-const OtpVerifyView: React.FC<OtpVerifyViewProps> = ({ onBack, onVerify }) => {
-  const [code, setCode] = useState(['', '', '', '']);
+const OtpVerifyView: React.FC<OtpVerifyViewProps> = ({ onBack, onVerify, phone, error }) => {
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [isVerifying, setIsVerifying] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
-    }
+    inputRefs.current[0]?.focus();
   }, []);
 
-  const handleChange = (index: number, value: string) => {
+  const handleChange = async (index: number, value: string) => {
     if (!/^[0-9]*$/.test(value)) return;
-    
     sounds.click();
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
 
-    // Auto focus next
-    if (value !== '' && index < 3) {
+    if (value !== '' && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
-    
-    // Auto submit
-    if (value !== '' && index === 3 && newCode.every(v => v !== '')) {
+
+    if (value !== '' && index === 5 && newCode.every(v => v !== '')) {
       sounds.success();
-      setTimeout(onVerify, 500);
+      setIsVerifying(true);
+      await onVerify(newCode.join(''));
+      setIsVerifying(false);
     }
   };
 
@@ -42,40 +42,43 @@ const OtpVerifyView: React.FC<OtpVerifyViewProps> = ({ onBack, onVerify }) => {
     }
   };
 
+  const maskedPhone = phone
+    ? phone.slice(0, -4).replace(/\d/g, '*') + phone.slice(-4)
+    : '';
+
   return (
-    <section className="flex flex-col flex-1 h-full px-6 pt-6 pb-[100px] overflow-y-auto" style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}>
+    <section className="flex flex-col flex-1 h-full px-6 pt-6 pb-[100px] overflow-y-auto"
+      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}>
       <header className="flex items-center gap-4 mb-10">
-        <button
-          type="button"
-          onClick={() => { sounds.click(); onBack(); }}
-          className="w-10 h-10 flex justify-center items-center rounded-xl glass-panel text-muted hover:text-white transition-colors"
-        >
+        <button type="button" onClick={() => { sounds.click(); onBack(); }}
+          className="w-10 h-10 flex justify-center items-center rounded-xl glass-panel text-muted hover:text-white transition-colors">
           <i className="fa-solid fa-arrow-left" />
         </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-center max-w-sm w-full mx-auto">
         <h1 className="text-3xl font-bold mb-2">Verify it's you</h1>
-        <p className="text-muted text-sm mb-10">Enter the 4-digit code we just sent to your phone.</p>
+        <p className="text-muted text-sm mb-10">
+          Enter the 6-digit code sent to <span className="text-white font-semibold">{maskedPhone}</span>
+        </p>
 
-        <div className="flex gap-4 justify-center mb-10">
+        <div className="flex gap-2 justify-center mb-4">
           {code.map((digit, index) => (
-            <input
-              key={index}
-              ref={el => inputRefs.current[index] = el}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
+            <input key={index} ref={el => { inputRefs.current[index] = el; }}
+              type="text" inputMode="numeric" maxLength={1} value={digit}
               onChange={e => handleChange(index, e.target.value)}
               onKeyDown={e => handleKeyDown(index, e)}
-              className="w-16 h-16 glass-card text-center text-3xl font-bold text-white outline-none border border-white/10 focus:border-[var(--color-gold)] focus:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all bg-transparent rounded-2xl"
-            />
+              disabled={isVerifying}
+              className="w-12 h-14 glass-card text-center text-2xl font-bold text-white outline-none border border-white/10 focus:border-[var(--color-gold)] transition-all bg-transparent rounded-2xl disabled:opacity-50" />
           ))}
         </div>
 
-        <div className="text-center text-sm text-muted">
-          Didn't receive the code? <button className="text-white hover:underline transition-all">Resend in 0:30</button>
+        {error && <p className="text-center text-sm mb-4" style={{ color: '#EF4444' }}>{error}</p>}
+        {isVerifying && <p className="text-center text-sm mb-4" style={{ color: 'var(--color-gold)' }}>Verifying...</p>}
+
+        <div className="text-center text-sm text-muted mt-4">
+          Didn't receive the code?{' '}
+          <button className="text-white hover:underline" onClick={onBack}>Resend</button>
         </div>
       </div>
     </section>

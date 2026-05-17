@@ -31,10 +31,19 @@ export const questions: Question[] = [
   {
     q: "How was your sleep quality?",
     opts: [
-      { e: "🔆", t: "Sharp" },
-      { e: "🙂", t: "Functional" },
-      { e: "😶‍🌫️", t: "Sculptured" },
-      { e: "🌫️", t: "Brown Fog" },
+      { e: "🔆", t: "7-9 Hours" },
+      { e: "🙂", t: "6-7 Hours" },
+      { e: "😶‍🌫️", t: "4-6 Hours" },
+      { e: "🌫️", t: "Less than 4 Hours" },
+    ],
+  },
+  {
+    q: "How was your focus today?",
+    opts: [
+      { e: "🎯", t: "Laser Sharp" },
+      { e: "🧠", t: "Focused" },
+      { e: "�", t: "Distracted" },
+      { e: "🌀", t: "Scattered" },
     ],
   },
 ];

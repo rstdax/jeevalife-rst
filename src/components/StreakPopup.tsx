@@ -1,14 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { sounds } from '../utils/audio';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface StreakPopupProps {
   onClose: () => void;
-  streakCount: number;
+  streakCount: number; // Fallback from parent
 }
 
 const StreakPopup: React.FC<StreakPopupProps> = ({ onClose, streakCount }) => {
+  const { user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [pageOffset, setPageOffset] = useState(0);
+  const [actualStreak, setActualStreak] = useState(streakCount || 0);
+
+  // Fetch the real streak from Firebase when the modal mounts
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchStreak = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'streaks', user.uid));
+        if (snap.exists()) {
+          setActualStreak(snap.data().current_streak || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching streak for modal:", error);
+      }
+    };
+    
+    fetchStreak();
+  }, [user]);
 
   useEffect(() => {
     // slight delay for animation
@@ -25,12 +48,13 @@ const StreakPopup: React.FC<StreakPopupProps> = ({ onClose, streakCount }) => {
     setTimeout(onClose, 400); // Wait for fade out animation
   };
 
-  const basePage = Math.floor(Math.max(streakCount - 1, 0) / 12);
+  // We use actualStreak instead of streakCount for all calculations
+  const basePage = Math.floor(Math.max(actualStreak - 1, 0) / 12);
   const currentPage = Math.max(0, basePage + pageOffset);
   const startDay = currentPage * 12 + 1;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-6 transition-all duration-500 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-6 transition-all duration-500 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClaim} />
       
       <div 
@@ -39,7 +63,7 @@ const StreakPopup: React.FC<StreakPopupProps> = ({ onClose, streakCount }) => {
       >
         <h2 className="text-2xl font-bold mb-2">Daily Check-in!</h2>
         <p className="text-muted text-sm mb-4">
-          You're on a <span className="font-bold" style={{ color: 'var(--color-gold)' }}>{streakCount} Day</span> streak.
+          You're on a <span className="font-bold" style={{ color: 'var(--color-gold)' }}>{actualStreak} Day</span> streak.
         </p>
 
         <div className="flex items-center justify-between w-full mb-3 px-1">
@@ -65,8 +89,8 @@ const StreakPopup: React.FC<StreakPopupProps> = ({ onClose, streakCount }) => {
           {Array.from({ length: 12 }, (_, i) => {
             return startDay + i;
           }).map((day) => {
-            const isCompleted = day < streakCount;
-            const isToday = day === streakCount;
+            const isCompleted = day < actualStreak;
+            const isToday = day === actualStreak;
             const milestones = [7, 15, 30, 45, 60, 75, 100, 125, 150, 175, 200, 365];
             const isMilestone = milestones.includes(day);
 
