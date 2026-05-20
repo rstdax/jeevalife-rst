@@ -1,4 +1,4 @@
-export type ViewId = 'dashboard' | 'check-in' | 'tools' | 'insights' | 'journal' | 'profile' | 'daily-reminders' | 'onboarding' | 'onboarding-details' | 'phone-sign-in' | 'otp-verify';
+export type ViewId = 'dashboard' | 'check-in' | 'tools' | 'insights' | 'journal' | 'profile' | 'daily-reminders' | 'onboarding' | 'onboarding-details' | 'phone-sign-in' | 'otp-verify' | 'about-us' | 'contact-us' | 'privacy-policy' | 'terms';
 
 export interface QuestionOption {
   e: string;

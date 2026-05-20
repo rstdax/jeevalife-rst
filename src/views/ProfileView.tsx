@@ -3,7 +3,17 @@ import { sounds } from '../utils/audio';
 import type { ViewId } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
+
+// Height helpers (store as cm internally)
+const feetInchesToCm = (ft: number, inch: number) => (ft * 30.48) + (inch * 2.54);
+const cmToFeetInches = (cm: number) => {
+  const totalInches = cm / 2.54;
+  return { ft: Math.floor(totalInches / 12), inch: Math.round(totalInches % 12) };
+};
+// Weight helpers (store as kg internally)
+const lbsToKg = (lbs: number) => lbs * 0.453592;
+const kgToLbs = (kg: number) => Math.round(kg * 2.20462 * 10) / 10;
 
 interface ProfileViewProps {
   sfxEnabled: boolean;
@@ -36,8 +46,18 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [age, setAge] = useState('');
-  const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
+
+  // Height state (display in ft+in or cm; store as cm)
+  const [heightUnit, setHeightUnit] = useState<'ft' | 'cm'>('ft');
+  const [heightFt, setHeightFt] = useState('');
+  const [heightIn, setHeightIn] = useState('');
+  const [heightCm, setHeightCm] = useState('');
+
+  // Weight state (display in kg or lbs; store as kg)
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('kg');
+  const [weightKg, setWeightKg] = useState('');
+  const [weightLbs, setWeightLbs] = useState('');
+
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [emergencyPhone, setEmergencyPhone] = useState('');
   const [emergencyRelation, setEmergencyRelation] = useState('');
@@ -51,8 +71,21 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
     setName(realName);
     setBio(profile.bio ?? '');
     setAge(profile.age?.toString() ?? '');
-    setHeight(profile.height?.toString() ?? '');
-    setWeight(profile.weight?.toString() ?? '');
+
+    // Height — stored as cm, display as ft+in by default
+    if (profile.height && profile.height > 0) {
+      const { ft, inch } = cmToFeetInches(profile.height);
+      setHeightFt(ft.toString());
+      setHeightIn(inch.toString());
+      setHeightCm(Math.round(profile.height).toString());
+    }
+
+    // Weight — stored as kg
+    if (profile.weight && profile.weight > 0) {
+      setWeightKg(profile.weight.toFixed(1));
+      setWeightLbs(kgToLbs(profile.weight).toString());
+    }
+
     setSelectedGoals(profile.goals ?? ['Calm Mind']);
     setEmergencyPhone(profile.emergency_contact_phone ?? '');
     setEmergencyRelation(profile.emergency_contact_relation ?? '');
@@ -116,13 +149,43 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
     );
   };
 
+  const handleHeightUnitSwitch = (unit: 'ft' | 'cm') => {
+    if (unit === heightUnit) return;
+    if (unit === 'cm') {
+      const cm = feetInchesToCm(parseFloat(heightFt) || 0, parseFloat(heightIn) || 0);
+      setHeightCm(cm > 0 ? Math.round(cm).toString() : '');
+    } else {
+      const { ft, inch } = cmToFeetInches(parseFloat(heightCm) || 0);
+      setHeightFt(ft > 0 ? ft.toString() : '');
+      setHeightIn(inch > 0 ? inch.toString() : '');
+    }
+    setHeightUnit(unit);
+  };
+
+  const handleWeightUnitSwitch = (unit: 'kg' | 'lbs') => {
+    if (unit === weightUnit) return;
+    if (unit === 'lbs') setWeightLbs(kgToLbs(parseFloat(weightKg) || 0).toString());
+    else setWeightKg((lbsToKg(parseFloat(weightLbs) || 0)).toFixed(1));
+    setWeightUnit(unit);
+  };
+
+  const getHeightCm = () => {
+    if (heightUnit === 'ft') return feetInchesToCm(parseFloat(heightFt) || 0, parseFloat(heightIn) || 0);
+    return parseFloat(heightCm) || 0;
+  };
+
+  const getWeightKg = () => {
+    if (weightUnit === 'kg') return parseFloat(weightKg) || 0;
+    return lbsToKg(parseFloat(weightLbs) || 0);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     await updateProfile({
       name, bio,
       age: age ? parseInt(age) : null,
-      height: height ? parseFloat(height) : null,
-      weight: weight ? parseFloat(weight) : null,
+      height: getHeightCm() || null,
+      weight: getWeightKg() || null,
       goals: selectedGoals.length > 0 ? selectedGoals : ['Calm Mind'],
       emergency_contact_phone: emergencyPhone || null,
       emergency_contact_relation: emergencyRelation || null,
@@ -164,8 +227,6 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Age', value: age, set: setAge, suffix: 'yrs', step: '1' },
-              { label: 'Height', value: height, set: setHeight, suffix: 'ft', step: '0.1' },
-              { label: 'Weight', value: weight, set: setWeight, suffix: 'kg', step: '0.1' },
             ].map(m => (
               <div key={m.label} className="glass-card flex flex-col gap-2 p-3">
                 <label className="text-[10px] font-bold text-muted uppercase tracking-widest">{m.label}</label>
@@ -177,6 +238,104 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Height with ft+in / cm toggle */}
+          <div className="glass-card flex flex-col gap-3 p-4">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-muted uppercase tracking-widest">Height</label>
+              <div className="flex rounded-lg overflow-hidden border border-white/10">
+                {(['ft', 'cm'] as const).map(u => (
+                  <button key={u} type="button" onClick={() => handleHeightUnitSwitch(u)}
+                    className="px-3 py-1 text-xs font-bold transition-all"
+                    style={{
+                      background: heightUnit === u ? 'var(--color-teal-light)' : 'transparent',
+                      color: heightUnit === u ? 'white' : 'var(--color-muted)',
+                    }}>{u}</button>
+                ))}
+              </div>
+            </div>
+            {heightUnit === 'ft' ? (
+              <div className="flex items-baseline gap-4">
+                <div className="flex flex-col items-center gap-1">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={heightFt}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val.includes('.')) {
+                        const [ftPart, inPart] = val.split('.');
+                        setHeightFt(ftPart);
+                        const inches = Math.min(parseInt(inPart || '0'), 11);
+                        setHeightIn(isNaN(inches) ? '' : inches.toString());
+                      } else {
+                        setHeightFt(val);
+                      }
+                    }}
+                    className="bg-transparent text-xl font-bold text-white outline-none border-b border-white/20 w-14 text-center focus:border-[var(--color-gold)] transition-colors py-1"
+                    placeholder="--"
+                  />
+                  <span className="text-[10px] text-muted">ft</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={heightIn}
+                    onChange={e => {
+                      const v = e.target.value.replace(/[^0-9]/g, '');
+                      const n = parseInt(v);
+                      setHeightIn(isNaN(n) ? '' : Math.min(n, 11).toString());
+                    }}
+                    className="bg-transparent text-xl font-bold text-white outline-none border-b border-white/20 w-14 text-center focus:border-[var(--color-gold)] transition-colors py-1"
+                    placeholder="--"
+                  />
+                  <span className="text-[10px] text-muted">in</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-baseline gap-2">
+                <input type="number" min="50" max="300" step="1" value={heightCm} onChange={e => setHeightCm(e.target.value)}
+                  className="bg-transparent text-xl font-bold text-white outline-none border-b border-white/20 w-20 text-center focus:border-[var(--color-gold)] transition-colors py-1"
+                  placeholder="--" />
+                <span className="text-sm text-muted">cm</span>
+              </div>
+            )}
+          </div>
+
+          {/* Weight with kg / lbs toggle */}
+          <div className="glass-card flex flex-col gap-3 p-4">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-muted uppercase tracking-widest">Weight</label>
+              <div className="flex rounded-lg overflow-hidden border border-white/10">
+                {(['kg', 'lbs'] as const).map(u => (
+                  <button key={u} type="button" onClick={() => handleWeightUnitSwitch(u)}
+                    className="px-3 py-1 text-xs font-bold transition-all"
+                    style={{
+                      background: weightUnit === u ? 'var(--color-teal-light)' : 'transparent',
+                      color: weightUnit === u ? 'white' : 'var(--color-muted)',
+                    }}>{u}</button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              {weightUnit === 'kg' ? (
+                <>
+                  <input type="number" min="1" max="500" step="0.1" value={weightKg} onChange={e => setWeightKg(e.target.value)}
+                    className="bg-transparent text-xl font-bold text-white outline-none border-b border-white/20 w-20 text-center focus:border-[var(--color-gold)] transition-colors py-1"
+                    placeholder="--" />
+                  <span className="text-sm text-muted">kg</span>
+                </>
+              ) : (
+                <>
+                  <input type="number" min="1" max="1100" step="0.1" value={weightLbs} onChange={e => setWeightLbs(e.target.value)}
+                    className="bg-transparent text-xl font-bold text-white outline-none border-b border-white/20 w-20 text-center focus:border-[var(--color-gold)] transition-colors py-1"
+                    placeholder="--" />
+                  <span className="text-sm text-muted">lbs</span>
+                </>
+              )}
+            </div>
           </div>
           <div className="glass-card flex flex-col gap-3">
             <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Wellness Goals</label>
@@ -312,14 +471,18 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
         <div className="glass-card mb-4 flex flex-col gap-1">
           <h3 className="text-xs font-bold text-muted uppercase tracking-widest mb-4">Information & Support</h3>
           {[
-            { label: 'About Us', icon: 'fa-solid fa-circle-info', url: '' },
-            { label: 'Contact Us', icon: 'fa-solid fa-headset', url: '' },
+            { label: 'About Us', icon: 'fa-solid fa-circle-info', view: 'about-us' as const },
+            { label: 'Contact Us', icon: 'fa-solid fa-headset', view: 'contact-us' as const },
             { label: 'Visit JeevaJyoti', icon: 'fa-solid fa-earth-asia', color: 'var(--color-gold)', url: 'https://jeevajyoti.org/' },
-            { label: 'Privacy Policy', icon: 'fa-solid fa-shield-halved', url: '' },
-            { label: 'Terms & Conditions', icon: 'fa-solid fa-file-contract', url: '' },
+            { label: 'Privacy Policy', icon: 'fa-solid fa-shield-halved', view: 'privacy-policy' as const },
+            { label: 'Terms & Conditions', icon: 'fa-solid fa-file-contract', view: 'terms' as const },
           ].map(item => (
             <button key={item.label} className="flex items-center justify-between py-3.5 hover:translate-x-1 transition-transform duration-300"
-              onClick={() => { sounds.click(); if (item.url) window.open(item.url, '_blank'); }}>
+              onClick={() => {
+                sounds.click();
+                if ('url' in item && item.url) window.open(item.url, '_blank');
+                else if ('view' in item && item.view) onNavigate(item.view);
+              }}>
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 flex justify-center items-center rounded-lg bg-white/5" style={{ color: item.color ?? 'white' }}>
                   <i className={item.icon} />
@@ -357,6 +520,15 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
           style={{ color: '#EF4444', borderColor: 'rgba(239,68,68,0.2)' }}>
           <i className="fa-solid fa-right-from-bracket" /> Sign Out
         </button>
+
+        {/* Admin access — only visible to admin UID */}
+        {user?.uid === import.meta.env.VITE_ADMIN_UID && (
+          <button onClick={() => { sounds.click(); window.location.href = '/admin'; }}
+            className="w-full glass-card mb-4 py-4 flex items-center justify-center gap-3 text-sm font-semibold"
+            style={{ color: 'var(--color-gold)', borderColor: 'rgba(212,175,55,0.2)' }}>
+            <i className="fa-solid fa-shield-halved" /> Admin Dashboard
+          </button>
+        )}
       </main>
     </section>
 
@@ -456,12 +628,21 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
                 </button>
                 <button
                   disabled={!feedbackText.trim()}
-                  onClick={() => {
+                  onClick={async () => {
                     if (!feedbackText.trim()) return;
-                    sounds.success();
-                    // TODO: send to email when configured
-                    console.log('Feedback:', { type: feedbackType, text: feedbackText, user: user?.uid });
-                    setFeedbackSent(true);
+                    try {
+                      await addDoc(collection(db, 'feedback'), {
+                        user_id: user?.uid ?? null,
+                        type: feedbackType,
+                        text: feedbackText.trim(),
+                        status: 'new',
+                        created_at: new Date().toISOString(),
+                      });
+                      sounds.success();
+                      setFeedbackSent(true);
+                    } catch (e) {
+                      console.error('Feedback save error:', e);
+                    }
                   }}
                   className="flex-1 py-3.5 rounded-xl text-sm font-bold disabled:opacity-40"
                   style={{ background: 'var(--color-gold)', color: '#031515' }}>

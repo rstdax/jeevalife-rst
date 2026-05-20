@@ -69,7 +69,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
     ? jeevaScore >= 85 ? 'Excellent' : jeevaScore >= 70 ? 'Good' : jeevaScore >= 50 ? 'Fair' : 'Low'
     : 'No data';
   const scoreColor = jeevaScore
-    ? jeevaScore >= 70 ? 'var(--color-green)' : jeevaScore >= 50 ? 'var(--color-gold)' : '#EF4444'
+    ? jeevaScore >= 85 ? '#34D399'          // Excellent — bright emerald
+    : jeevaScore >= 70 ? 'var(--color-green)' // Good — standard green
+    : jeevaScore >= 50 ? 'var(--color-gold)'  // Fair — gold
+    : '#EF4444'                               // Low — red
     : 'var(--color-muted)';
 
   return (
@@ -190,14 +193,28 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
 
         <div className="grid grid-cols-2 gap-4">
           <div className="glass-card cursor-pointer" onClick={() => { sounds.click(); onNavigate('insights'); }}
-            style={{ animation: 'popIn 0.6s var(--ease-spring) forwards', animationDelay: '0.1s', opacity: 0, transform: 'translateY(20px) scale(0.95)' }}>
+            style={{
+              animation: 'popIn 0.6s var(--ease-spring) forwards', animationDelay: '0.1s', opacity: 0, transform: 'translateY(20px) scale(0.95)',
+              borderColor: jeevaScore
+                ? jeevaScore >= 85 ? 'rgba(16,185,129,0.45)'   // Excellent — green
+                : jeevaScore >= 70 ? 'rgba(16,185,129,0.25)'   // Good — soft green
+                : jeevaScore >= 50 ? 'rgba(212,175,55,0.4)'    // Fair — gold
+                : 'rgba(239,68,68,0.4)'                         // Low — red
+                : undefined,
+              boxShadow: jeevaScore
+                ? jeevaScore >= 85 ? '0 0 18px rgba(16,185,129,0.2)'
+                : jeevaScore >= 70 ? 'none'
+                : jeevaScore >= 50 ? '0 0 18px rgba(212,175,55,0.15)'
+                : '0 0 18px rgba(239,68,68,0.15)'
+                : undefined,
+            }}>
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Jeeva Score</h3>
               <i className="fa-solid fa-chevron-right text-xs" style={{ color: 'var(--color-muted)' }} />
             </div>
-            <div className="flex items-baseline gap-2 mt-3 mb-1">
+            <div className="flex flex-col mt-3 mb-1">
               <span className="text-4xl font-extrabold leading-none" style={{ fontFamily: 'var(--font-heading)' }}>{jeevaScore ?? '--'}</span>
-              <span className="font-semibold" style={{ color: scoreColor }}>{scoreLabel}</span>
+              <span className="text-sm font-bold mt-1" style={{ color: scoreColor }}>{scoreLabel}</span>
             </div>
             <p className="text-xs" style={{ color: 'var(--color-muted)' }}>{jeevaScore ? 'Based on last check-in' : 'Complete a check-in'}</p>
           </div>

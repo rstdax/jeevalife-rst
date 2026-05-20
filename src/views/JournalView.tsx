@@ -1,11 +1,14 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { sounds } from '../utils/audio';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import {
   collection, query, where, orderBy, limit, getDocs, deleteDoc, doc,
+  startAfter, type QueryDocumentSnapshot, type DocumentData,
 } from 'firebase/firestore';
 import JournalWriteView from './JournalWriteView';
+
+const PAGE_SIZE = 5;
 
 interface JournalEntry {
   id: string;
@@ -37,6 +40,9 @@ const JournalView: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [checkinMoods, setCheckinMoods] = useState<Record<string, number>>({});
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Popup states
   const [showWritePage, setShowWritePage] = useState(false);
@@ -46,18 +52,21 @@ const JournalView: React.FC = () => {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
 
-  useEffect(() => {
+  const fetchEntries = useCallback(async (after?: QueryDocumentSnapshot<DocumentData>) => {
     if (!user) return;
-    const q = query(
-      collection(db, 'journal_entries'),
-      where('user_id', '==', user.uid),
-      orderBy('created_at', 'desc'),
-      limit(20),
-    );
-    getDocs(q).then(snap => {
-      setEntries(snap.docs.map(d => ({ id: d.id, ...d.data() } as JournalEntry)));
-    });
+    const q = after
+      ? query(collection(db, 'journal_entries'), where('user_id', '==', user.uid), orderBy('created_at', 'desc'), startAfter(after), limit(PAGE_SIZE))
+      : query(collection(db, 'journal_entries'), where('user_id', '==', user.uid), orderBy('created_at', 'desc'), limit(PAGE_SIZE));
+    const snap = await getDocs(q);
+    const newEntries = snap.docs.map(d => ({ id: d.id, ...d.data() } as JournalEntry));
+    setEntries(prev => after ? [...prev, ...newEntries] : newEntries);
+    setLastDoc(snap.docs[snap.docs.length - 1] ?? null);
+    setHasMore(snap.docs.length === PAGE_SIZE);
   }, [user]);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
 
   useEffect(() => {
     if (!user) return;
@@ -128,16 +137,9 @@ const JournalView: React.FC = () => {
         <JournalWriteView
           onBack={() => setShowWritePage(false)}
           onSaved={() => {
-            if (!user) return;
-            const q = query(
-              collection(db, 'journal_entries'),
-              where('user_id', '==', user.uid),
-              orderBy('created_at', 'desc'),
-              limit(20),
-            );
-            getDocs(q).then(snap => {
-              setEntries(snap.docs.map(d => ({ id: d.id, ...d.data() } as JournalEntry)));
-            });
+            setLastDoc(null);
+            setHasMore(false);
+            fetchEntries();
           }}
         />
       )}
@@ -340,11 +342,12 @@ const JournalView: React.FC = () => {
                     
                     <div className="flex-1 overflow-hidden pr-4">
                       {entry.text.startsWith('Q:') ? (
-                        <div className="line-clamp-2">
+                        <div className="flex flex-col gap-1">
                           {entry.text.split('\n\n').map((part, i) => (
-                            <span key={i} className="mr-1.5" style={{
+                            <span key={i} className="line-clamp-1" style={{
                               color: i === 0 ? 'var(--color-teal-light)' : '#D1D5DB',
                               fontWeight: i === 0 ? 600 : 400,
+                              display: 'block',
                             }}>{part}</span>
                           ))}
                         </div>
@@ -362,6 +365,27 @@ const JournalView: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* See More button */}
+              {hasMore && (
+                <button
+                  onClick={async () => {
+                    if (!lastDoc || loadingMore) return;
+                    setLoadingMore(true);
+                    await fetchEntries(lastDoc);
+                    setLoadingMore(false);
+                  }}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 mt-2"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid var(--color-glass-border)',
+                    color: 'var(--color-gold)',
+                  }}>
+                  {loadingMore
+                    ? <><i className="fa-solid fa-circle-notch fa-spin text-xs" /> Loading...</>
+                    : <><i className="fa-solid fa-chevron-down text-xs" /> See More</>}
+                </button>
+              )}
             </div>
           )}
         </main>

@@ -1,12 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { sounds } from '../utils/audio';
-import { questions } from '../data';
+import { questions as staticQuestions } from '../data';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import {
   collection, addDoc, doc, getDoc, updateDoc, setDoc,
+  getDocs, query, orderBy, where,
 } from 'firebase/firestore';
 import { checkAndSendCriticalAlert } from '../utils/whatsapp';
+import type { Question } from '../types';
 
 interface CheckInViewProps {
   onBack: () => void;
@@ -273,6 +275,23 @@ const CheckInView: React.FC<CheckInViewProps> = ({ onBack, onComplete }) => {
   const [reflectionText, setReflectionText] = useState('');
   const [savedAnswers, setSavedAnswers] = useState<number[]>([]);
   const [reflectionOpened, setReflectionOpened] = useState(false);
+
+  // Load questions from Firestore, fall back to static
+  const [questions, setQuestions] = useState<Question[]>(staticQuestions);
+  useEffect(() => {
+    getDocs(query(
+      collection(db, 'checkin_questions'),
+      where('active', '==', true),
+      orderBy('order', 'asc')
+    )).then(snap => {
+      if (!snap.empty) {
+        setQuestions(snap.docs.map(d => {
+          const data = d.data();
+          return { q: data.q, opts: data.opts } as Question;
+        }));
+      }
+    }).catch(() => { /* use static fallback */ });
+  }, []);
 
   const saveCheckin = useCallback(async (newAnswers: number[], reflectionNote?: string) => {
     if (!user) { sounds.success(); setIsComplete(true); setIsSaving(false); setTimeout(() => onBack(), 2500); return; }

@@ -10,7 +10,14 @@ import InsightsView from './views/InsightsView';
 import JournalView from './views/JournalView';
 import ProfileView from './views/ProfileView';
 import DailyRemindersView from './views/DailyRemindersView';
+import AboutUsView from './views/AboutUsView';
+import ContactUsView from './views/ContactUsView';
+import PrivacyPolicyView from './views/PrivacyPolicyView';
+import TermsView from './views/TermsView';
 import StreakPopup from './components/StreakPopup';
+import BetaDisclaimerPopup from './components/BetaDisclaimerPopup';
+import UserFeedbackPopup from './components/UserFeedbackPopup';
+import type { FeedbackMilestone } from './components/UserFeedbackPopup';
 import OnboardingView from './views/OnboardingView';
 import PhoneSignInView from './views/PhoneSignInView';
 import OtpVerifyView from './views/OtpVerifyView';
@@ -33,6 +40,12 @@ function App() {
   const [jeevaScore, setJeevaScore] = useState<number | null>(null);
   const [pendingPhone, setPendingPhone] = useState('');
   const [otpError, setOtpError] = useState('');
+
+  // Beta disclaimer — show once ever
+  const [showBetaDisclaimer, setShowBetaDisclaimer] = useState(false);
+
+  // Timed feedback popups
+  const [feedbackMilestone, setFeedbackMilestone] = useState<FeedbackMilestone | null>(null);
 
   // streak aur score fetch karo — wait for auth + profile to be ready
   useEffect(() => {
@@ -121,40 +134,59 @@ function App() {
     return () => clearInterval(interval);
   }, [user]);
 
-  // routing — loading khatam hone ke baad
+  // routing — loading khatam hone ke baad, sirf auth state change pe run karo
+  const routingDoneRef = useRef(false);
+
   useEffect(() => {
     if (loading) return;
+
+    // Agar user ne manually navigate kiya hai toh routing dobara mat karo
+    if (routingDoneRef.current) return;
+
+    let nextView: ViewId = 'dashboard';
+
     if (!user) {
       localStorage.removeItem(LAST_VIEW_KEY);
-      setActiveView('onboarding');
-      return;
+      nextView = 'onboarding';
+    } else {
+      // If profile has age, they've already completed onboarding — mark done
+      if (profile?.age) {
+        localStorage.setItem(`onboarding_done_${user.uid}`, 'true');
+      }
+      const done = localStorage.getItem(`onboarding_done_${user.uid}`);
+
+      if (!profileReady) {
+        // Wait for profile to load before deciding
+        return;
+      }
+
+      if (!done && !profile?.age) {
+        // Genuinely new user — no age, no done flag
+        nextView = 'onboarding-details';
+      } else {
+        const saved = localStorage.getItem(LAST_VIEW_KEY) as ViewId | null;
+        nextView = (saved && !AUTH_VIEWS.includes(saved)) ? saved : 'dashboard';
+      }
     }
-    if (profile?.age) {
-      localStorage.setItem(`onboarding_done_${user.uid}`, 'true');
-    }
-    const done = localStorage.getItem(`onboarding_done_${user.uid}`);
-    if (!done && !profile?.age && profileReady) {
-      setActiveView('onboarding-details');
-      return;
-    }
-    const saved = localStorage.getItem(LAST_VIEW_KEY) as ViewId | null;
-    setActiveView(saved && !AUTH_VIEWS.includes(saved) ? saved : 'dashboard');
+
+    routingDoneRef.current = true;
+    setActiveView(nextView);
   }, [loading, user, profile?.age, profileReady]);
 
-  // active view save karo
+  // Jab user sign out kare toh routing reset karo
+  useEffect(() => {
+    if (!loading && !user) {
+      routingDoneRef.current = false;
+      setActiveView('onboarding');
+    }
+  }, [user, loading]);
+
+  // active view save karo (auth views ko nahi)
   useEffect(() => {
     if (activeView && !AUTH_VIEWS.includes(activeView)) {
       localStorage.setItem(LAST_VIEW_KEY, activeView);
     }
   }, [activeView]);
-
-  // logout hone pe onboarding pe bhejo
-  useEffect(() => {
-    if (loading) return;
-    if (!user && activeView && !AUTH_VIEWS.includes(activeView)) {
-      setActiveView('onboarding');
-    }
-  }, [user, loading, activeView]);
 
   // streak popup
   useEffect(() => {
@@ -164,7 +196,76 @@ function App() {
       const t = setTimeout(() => setShowStreakPopup(true), 1500);
       return () => clearTimeout(t);
     }
-  }, [user, profile?.age]);
+  }, [user?.uid, profile?.age]);
+
+  // Clean up stale keys written by previous buggy version
+  useEffect(() => {
+    if (!user?.uid) return;
+    // Remove 'shown' placeholder keys — only keep 'true' (user actually submitted/dismissed)
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(`feedback_done_`) && localStorage.getItem(k) === 'shown')
+      .forEach(k => localStorage.removeItem(k));
+  }, [user?.uid]);
+
+  // Beta disclaimer — show once per user (first time after onboarding)
+  // Use a ref to prevent showing multiple times in same session
+  const betaShownRef = useRef(false);
+  useEffect(() => {
+    if (!user?.uid || !profile?.age) return;
+    if (betaShownRef.current) return;
+    const key = `beta_disclaimer_accepted_${user.uid}`;
+    if (!localStorage.getItem(key)) {
+      betaShownRef.current = true;
+      const t = setTimeout(() => setShowBetaDisclaimer(true), 800);
+      return () => clearTimeout(t);
+    }
+  }, [user?.uid, profile?.age]);
+
+  const handleBetaAccept = useCallback(() => {
+    if (user) localStorage.setItem(`beta_disclaimer_accepted_${user.uid}`, 'true');
+    setShowBetaDisclaimer(false);
+  }, [user]);
+
+  // Timed feedback popups — 1 day, 3 days, 7 days after first login
+  // Use a ref to prevent showing multiple times in same session
+  const feedbackShownRef = useRef(false);
+  useEffect(() => {
+    if (!user?.uid || !profile?.age) return;
+    if (feedbackShownRef.current) return;
+
+    const firstLoginKey = `first_login_date_${user.uid}`;
+    let firstLogin = localStorage.getItem(firstLoginKey);
+    if (!firstLogin) {
+      firstLogin = new Date().toISOString();
+      localStorage.setItem(firstLoginKey, firstLogin);
+      // Brand new user — no feedback yet, return
+      return;
+    }
+
+    const daysSince = (Date.now() - new Date(firstLogin).getTime()) / (1000 * 60 * 60 * 24);
+
+    const milestones: { key: FeedbackMilestone; days: number }[] = [
+      { key: '1day', days: 1 },
+      { key: '3day', days: 3 },
+      { key: '7day', days: 7 },
+    ];
+
+    for (const m of milestones) {
+      const doneKey = `feedback_done_${m.key}_${user.uid}`;
+      if (daysSince >= m.days && !localStorage.getItem(doneKey)) {
+        feedbackShownRef.current = true;
+        const t = setTimeout(() => setFeedbackMilestone(m.key), 2500);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [user?.uid, profile?.age]);
+
+  const handleFeedbackClose = useCallback(() => {
+    if (user && feedbackMilestone) {
+      localStorage.setItem(`feedback_done_${feedbackMilestone}_${user.uid}`, 'true');
+    }
+    setFeedbackMilestone(null);
+  }, [user, feedbackMilestone]);
 
   const handleClaimStreak = useCallback(() => {
     if (user) localStorage.setItem(`lastCheckinDate_${user.uid}`, new Date().toDateString());
@@ -214,14 +315,16 @@ function App() {
 
   if (activeView === null) {
     return (
-      <>
-        <AmbientBackground />
-        <div className="relative flex flex-col mx-auto min-h-screen items-center justify-center"
-          style={{ maxWidth: 480, minHeight: '100dvh' }}>
+      <div className="relative min-h-dvh w-full overflow-x-hidden bg-bg">
+        <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
+          <AmbientBackground />
+        </div>
+        <div className="relative z-10 flex flex-col mx-auto min-h-dvh items-center justify-center"
+          style={{ maxWidth: 480 }}>
           <div className="w-16 h-16 rounded-full border-2 animate-spin"
             style={{ borderColor: 'var(--color-teal-light)', borderTopColor: 'transparent' }} />
         </div>
-      </>
+      </div>
     );
   }
 
@@ -241,6 +344,14 @@ function App() {
         return <ProfileView sfxEnabled={sfxEnabled} onToggleSfx={handleToggleSfx} onNavigate={handleNavigate} />;
       case 'daily-reminders':
         return <DailyRemindersView onBack={() => handleNavigate('profile')} />;
+      case 'about-us':
+        return <AboutUsView onBack={() => handleNavigate('profile')} onNavigate={handleNavigate} />;
+      case 'contact-us':
+        return <ContactUsView onBack={() => handleNavigate('profile')} />;
+      case 'privacy-policy':
+        return <PrivacyPolicyView onBack={() => handleNavigate('profile')} />;
+      case 'terms':
+        return <TermsView onBack={() => handleNavigate('profile')} />;
       case 'onboarding':
         return <OnboardingView onNavigate={handleNavigate} onGoogleSignUp={handleGoogleSignUp} />;
       case 'phone-sign-in':
@@ -271,7 +382,7 @@ function App() {
 
   return (
     // Root application layer that maps perfectly over your background assets
-    <div className="relative min-h-screen min-h-[100dvh] w-full overflow-x-hidden bg-bg text-text selection:bg-teal">
+    <div className="relative min-h-dvh w-full overflow-x-hidden bg-bg text-text selection:bg-teal">
       
       {/* 1. Fixed Background layer so graphics never collapse or stretch layout items */}
       <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
@@ -285,10 +396,24 @@ function App() {
         </div>
       )}
 
+      {/* Beta disclaimer — shown once after first onboarding */}
+      {showBetaDisclaimer && !isAuthView && (
+        <BetaDisclaimerPopup onAccept={handleBetaAccept} />
+      )}
+
+      {/* Timed feedback popups */}
+      {feedbackMilestone && !isAuthView && user && (
+        <UserFeedbackPopup
+          milestone={feedbackMilestone}
+          userId={user.uid}
+          onClose={handleFeedbackClose}
+        />
+      )}
+
       {/* 3. Main content phone frame shell wrapper */}
       <div 
         id="app" 
-        className="relative z-10 flex flex-col mx-auto min-h-screen min-h-[100dvh] w-full"
+        className="relative z-10 flex flex-col mx-auto min-h-dvh w-full"
         style={{ maxWidth: 480 }}
       >
         {/* Dynamic view components container */}
