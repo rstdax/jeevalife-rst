@@ -6,7 +6,7 @@ import AdminDashboard from './AdminDashboard';
 // Only the email is stored here to identify the admin account.
 // Password is managed entirely by Firebase — change it anytime in
 // Firebase Console > Authentication > Users without touching any code.
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string;
+const ADMIN_EMAIL = (import.meta as unknown as { env: Record<string, string> }).env.VITE_ADMIN_EMAIL ?? '';
 
 const AdminRoot: React.FC = () => {
   const [email, setEmail]         = useState('');
