@@ -109,8 +109,8 @@ const OnboardingDetailsView: React.FC<OnboardingDetailsViewProps> = ({ onComplet
   };
 
   return (
-    <section className="flex flex-col flex-1 h-full px-6 pt-10 pb-[100px] overflow-y-auto"
-      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}>
+    <section className="flex flex-col flex-1 h-full pt-10 overflow-y-auto"
+      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}>
       <div className="flex-1 flex flex-col max-w-sm w-full mx-auto">
         <h1 className="text-3xl font-bold mb-2">Almost there!</h1>
         <p className="text-muted text-sm mb-10">Tell us a bit about yourself to personalize your experience.</p>

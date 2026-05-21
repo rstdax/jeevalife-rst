@@ -28,9 +28,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate }) => {
       className="fixed left-1/2 -translate-x-1/2 flex justify-around items-center z-[100]"
       style={{
         bottom: 'calc(12px + env(safe-area-inset-bottom, 8px))',
-        width: 'calc(100% - 48px)',
+        width: 'min(calc(100% - 32px), calc(100vw - 32px))',
         maxWidth: 432,
-        height: 70,
+        height: 'clamp(58px, 10vw, 70px)',
         borderRadius: 35,
         background: 'rgba(2, 6, 23, 0.65)', // Deep dark blue glass
         backdropFilter: 'blur(20px)',
@@ -47,8 +47,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate }) => {
             key={item.target}
             id={`nav-${item.target}`}
             onClick={() => handleClick(item.target)}
-            className="relative cursor-pointer flex flex-col items-center justify-center w-12 h-12 transition-all duration-300"
+            className="relative cursor-pointer flex flex-col items-center justify-center transition-all duration-300"
             style={{
+              width: 'clamp(40px, 10vw, 48px)',
+              height: 'clamp(40px, 10vw, 48px)',
               color: isActive ? '#10b981' : '#64748b', // Emerald green when active, slate when inactive
               transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
               textShadow: isActive && !item.isLucide ? '0 0 12px rgba(16, 185, 129, 0.5)' : 'none',
@@ -57,18 +59,19 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate }) => {
             {/* Render Lucide component or FontAwesome <i> tag */}
             {item.isLucide ? (
                <AudioWaveform 
-                 size={22} 
+                 size={20} 
                  style={{ 
                    filter: isActive ? 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.6))' : 'none',
                    transition: 'filter 0.3s ease'
                  }} 
                />
             ) : (
-               <i className={`${item.icon} text-[22px]`} />
+               <i className={`${item.icon} text-[20px]`} />
             )}
             
             {/* Glowing Active Dot Indicator */}
             <div 
+              data-no-min-size
               className={`absolute bottom-0 w-[5px] h-[5px] rounded-full transition-all duration-300 ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
               style={{ 
                 background: '#10b981',

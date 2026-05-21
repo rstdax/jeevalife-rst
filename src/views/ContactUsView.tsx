@@ -41,8 +41,8 @@ const ContactUsView: React.FC<ContactUsViewProps> = ({ onBack }) => {
 
   return (
     <section
-      className="flex flex-col flex-1 px-6 pt-6 pb-[100px] h-full overflow-y-auto"
-      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}
+      className="flex flex-col flex-1 pt-6 h-full overflow-y-auto"
+      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}
     >
       {/* Header */}
       <header className="flex items-center gap-4 mb-8">

@@ -320,7 +320,7 @@ function App() {
           <AmbientBackground />
         </div>
         <div className="relative z-10 flex flex-col mx-auto min-h-dvh items-center justify-center"
-          style={{ maxWidth: 480 }}>
+          style={{ maxWidth: 'min(480px, 100vw)' }}>
           <div className="w-16 h-16 rounded-full border-2 animate-spin"
             style={{ borderColor: 'var(--color-teal-light)', borderTopColor: 'transparent' }} />
         </div>
@@ -370,7 +370,7 @@ function App() {
       default:
         return (
           <div className="relative flex flex-col mx-auto min-h-screen items-center justify-center"
-            style={{ maxWidth: 480, minHeight: '100dvh' }}>
+            style={{ maxWidth: 'min(480px, 100vw)', minHeight: '100dvh' }}>
             <div className="w-16 h-16 rounded-full border-2 animate-spin"
               style={{ borderColor: 'var(--color-teal-light)', borderTopColor: 'transparent' }} />
           </div>
@@ -414,7 +414,7 @@ function App() {
       <div 
         id="app" 
         className="relative z-10 flex flex-col mx-auto min-h-dvh w-full"
-        style={{ maxWidth: 480 }}
+        style={{ maxWidth: 'min(480px, 100vw)' }}
       >
         {/* Dynamic view components container */}
         <main className="flex-1 w-full relative">

@@ -76,11 +76,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
     : 'var(--color-muted)';
 
   return (
-    <section id="dashboard-view" className="flex flex-col flex-1 px-6 pt-6 pb-[100px] h-full overflow-y-auto"
-      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}>
+    <section id="dashboard-view" className="flex flex-col flex-1 pt-6 h-full overflow-y-auto"
+      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}>
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-[1.6rem] tracking-tight font-bold">{getGreeting()}, {truncatedName}</h2>
+          <h2 style={{ fontSize: 'clamp(1.3rem, 5vw, 1.6rem)' }} className="tracking-tight font-bold">{getGreeting()}, {truncatedName}</h2>
           <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
             {profile?.goals?.length ? `Goals: ${profile.goals.slice(0, 2).join(', ')} 🌿` : 'Your mind is clear today. 🌿'}
           </p>
@@ -122,11 +122,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
             }
           `}</style>
 
-          <div className="relative flex justify-center items-center mx-auto mb-10" style={{ width: 280, height: 280 }}>
+          <div className="relative flex justify-center items-center mx-auto mb-10" style={{ width: 'min(280px, 75vw)', height: 'min(280px, 75vw)' }}>
             
             {/* Multiple staggered ripples for frequent, gentle emergence */}
             <div className="absolute pointer-events-none" style={{
-              width: 195, height: 195,
+              width: 'min(195px, 52vw)', height: 'min(195px, 52vw)',
               opacity: 0,
               borderRadius: '50%',
               border: '1.5px solid rgba(0, 242, 254, 0.5)',
@@ -134,7 +134,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
               willChange: 'transform, opacity, border-radius',
             }} />
             <div className="absolute pointer-events-none" style={{
-              width: 195, height: 195,
+              width: 'min(195px, 52vw)', height: 'min(195px, 52vw)',
               opacity: 0,
               borderRadius: '50%',
               border: '1.5px solid rgba(0, 242, 254, 0.4)',
@@ -143,7 +143,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
               willChange: 'transform, opacity, border-radius',
             }} />
             <div className="absolute pointer-events-none" style={{
-              width: 195, height: 195,
+              width: 'min(195px, 52vw)', height: 'min(195px, 52vw)',
               opacity: 0,
               borderRadius: '50%',
               border: '1.5px solid rgba(0, 242, 254, 0.3)',
@@ -154,7 +154,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
 
             {/* Ambient Water Glow behind the droplet */}
             <div className="absolute pointer-events-none" style={{
-              width: 190, height: 190,
+              width: 'min(190px, 50vw)', height: 'min(190px, 50vw)',
               background: 'radial-gradient(circle at 40% 40%, rgba(0,242,254,0.3) 0%, transparent 70%)',
               animation: 'pulseWaterGlow 4s ease-in-out infinite, dropletMorph 8s ease-in-out infinite',
               willChange: 'opacity, transform, border-radius',
@@ -166,7 +166,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
               aria-label="Start 60-second Check-in"
               className="relative z-10 flex flex-col justify-center items-center text-center cursor-pointer active:scale-95 focus:outline-none transition-transform duration-300"
               style={{
-                width: 195, height: 195,
+                width: 'min(195px, 52vw)', height: 'min(195px, 52vw)',
                 animation: 'dropletMorph 8s ease-in-out infinite',
                 background: 'transparent',
                 backdropFilter: 'blur(5px)',
@@ -191,7 +191,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
           </div>
         </>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2" style={{ gap: 'clamp(10px, 2.5vw, 16px)' }}>
           <div className="glass-card cursor-pointer" onClick={() => { sounds.click(); onNavigate('insights'); }}
             style={{
               animation: 'popIn 0.6s var(--ease-spring) forwards', animationDelay: '0.1s', opacity: 0, transform: 'translateY(20px) scale(0.95)',

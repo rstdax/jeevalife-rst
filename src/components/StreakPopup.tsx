@@ -54,12 +54,13 @@ const StreakPopup: React.FC<StreakPopupProps> = ({ onClose, streakCount }) => {
   const startDay = currentPage * 12 + 1;
 
   return (
-    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-6 transition-all duration-500 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center transition-all duration-500 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      style={{ padding: 'clamp(12px, 3vw, 24px)' }}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClaim} />
       
       <div 
-        className={`glass-card relative flex flex-col items-center text-center p-8 w-full max-w-sm transition-all duration-500 transform ${isVisible ? 'translate-y-0 scale-100' : 'translate-y-10 scale-95'}`}
-        style={{ border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 0 40px rgba(212,175,55,0.1)' }}
+        className={`glass-card relative flex flex-col items-center text-center w-full max-w-sm transition-all duration-500 transform ${isVisible ? 'translate-y-0 scale-100' : 'translate-y-10 scale-95'}`}
+        style={{ border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 0 40px rgba(212,175,55,0.1)', padding: 'clamp(20px, 5vw, 32px)' }}
       >
         <h2 className="text-2xl font-bold mb-2">Daily Check-in!</h2>
         <p className="text-muted text-sm mb-4">
@@ -85,7 +86,7 @@ const StreakPopup: React.FC<StreakPopupProps> = ({ onClose, streakCount }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 w-full mb-6">
+        <div className="grid grid-cols-4 w-full mb-6" style={{ gap: 'clamp(4px, 1.5vw, 8px)' }}>
           {Array.from({ length: 12 }, (_, i) => {
             return startDay + i;
           }).map((day) => {

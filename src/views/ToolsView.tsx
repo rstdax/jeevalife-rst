@@ -216,7 +216,7 @@ const ToolsView: React.FC = () => {
   const progress = Math.min(elapsed / DURATION, 1);
 
   return (
-    <div className="relative min-h-screen w-full bg-[#050505] overflow-hidden flex flex-col font-sans text-white pb-32">
+    <div className="relative min-h-screen w-full bg-[#050505] overflow-hidden flex flex-col font-sans text-white" style={{ paddingBottom: 'calc(clamp(100px, 18vw, 128px) + env(safe-area-inset-bottom, 0px))' }}>
       
       {/* ── Ambient Background Glow ── */}
       <div 
@@ -225,7 +225,7 @@ const ToolsView: React.FC = () => {
       />
       
       {/* ── Content Wrapper ── */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 pt-10" style={{ scrollbarWidth: 'none' }}>
+      <div className="relative z-10 flex-1 overflow-y-auto pt-10" style={{ scrollbarWidth: 'none', paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)' }}>
         
         {/* Header */}
         <header className="mb-8">
@@ -234,7 +234,7 @@ const ToolsView: React.FC = () => {
         </header>
 
         {/* ── Hero Player (Bento Card) ── */}
-        <div className="relative rounded-[36px] bg-white/5 backdrop-blur-xl border border-white/10 p-6 mb-8 shadow-2xl overflow-hidden transition-all duration-500">
+        <div className="relative backdrop-blur-xl border border-white/10 p-5 mb-8 shadow-2xl overflow-hidden transition-all duration-500" style={{ borderRadius: 'clamp(24px, 6vw, 36px)', background: 'rgba(255, 255, 255, 0.05)' }}>
           
           {/* Subtle noise texture overlay for the glass card */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} />
@@ -324,7 +324,7 @@ const ToolsView: React.FC = () => {
         </div>
 
         {/* ── Category Pills ── */}
-        <div className="flex gap-3 mb-8 overflow-x-auto pb-2 px-1 -mx-1" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex mb-8 overflow-x-auto pb-2 px-1 -mx-1" style={{ scrollbarWidth: 'none', gap: 'clamp(8px, 2vw, 12px)' }}>
           {CATEGORIES.map(cat => {
             const isActive = activeCategory === cat;
             const vibe = CATEGORY_VIBES[cat] || CATEGORY_VIBES.Recommended;
@@ -363,7 +363,7 @@ const ToolsView: React.FC = () => {
         )}
 
         {/* ── Bento Grid (Sounds) ── */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 mb-8" style={{ gap: 'clamp(10px, 2.5vw, 16px)' }}>
           {filtered.map(sound => {
             const isActive = activeSound?.id === sound.id;
             const sColor = CATEGORY_VIBES[sound.category] || CATEGORY_VIBES.Recommended;
@@ -372,8 +372,9 @@ const ToolsView: React.FC = () => {
               <button 
                 key={sound.id} 
                 onClick={() => handleSelect(sound)}
-                className={`group relative flex flex-col p-5 rounded-[28px] text-left transition-all duration-300 active:scale-95 overflow-hidden`}
+                className={`group relative flex flex-col rounded-[28px] text-left transition-all duration-300 active:scale-95 overflow-hidden`}
                 style={{
+                  padding: 'clamp(14px, 3.5vw, 20px)',
                   background: isActive ? getCategoryColor(sound.category, 0.1) : 'rgba(255,255,255,0.04)',
                   border: `1px solid ${isActive ? getCategoryColor(sound.category, 0.3) : 'rgba(255,255,255,0.05)'}`,
                   boxShadow: isActive ? `0 8px 24px ${getCategoryColor(sound.category, 0.15)}` : '0 4px 12px rgba(0,0,0,0.1)'

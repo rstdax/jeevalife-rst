@@ -414,3 +414,70 @@ input[type='number'] { -moz-appearance: textfield; }
   0%   { transform: translateY(100%); opacity: 0; }
   100% { transform: translateY(0);    opacity: 1; }
 }
+
+/* ================= SAMSUNG & FOLDABLE RESPONSIVE ================= */
+
+/* ── Small Samsung phones (Galaxy A series, Galaxy Z Flip cover screen) ── */
+@media (max-width: 374px) {
+  .glass-card {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .glass-panel {
+    border-radius: 14px;
+  }
+
+  /* Reduce bottom padding so BottomNav doesn't eat too much space */
+  #app>section {
+    padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Reduce ambient blob sizes for GPU efficiency on mid-range Samsung chipsets */
+  body {
+    font-size: 14px;
+  }
+}
+
+/* ── Mid-range Samsung phones (Galaxy S series, most A-series) ── */
+@media (min-width: 375px) and (max-width: 412px) {
+  .glass-card {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  #app>section {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── Foldable unfolded inner screen (Galaxy Z Fold) ── */
+@media (min-width: 600px) {
+  .glass-card {
+    padding: 24px;
+    border-radius: 28px;
+  }
+}
+
+/* ── Foldable fold-spanning mode (hinge-aware) ── */
+@media (horizontal-viewport-segments: 2) {
+  #root {
+    display: flex;
+    gap: env(viewport-segment-right 0 0, 0px);
+  }
+}
+
+/* ── Ensure minimum touch targets across all Samsung devices ── */
+@media (pointer: coarse) {
+  button, [role="button"], a, input[type="range"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exempt very small indicator dots and decorative elements */
+  button.indicator-dot,
+  [data-no-min-size] {
+    min-height: unset;
+    min-width: unset;
+  }
+}

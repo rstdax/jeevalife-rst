@@ -107,14 +107,16 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate, onGoogleSig
         </div>
 
         {/* ── 2. Content Layout (Flex Column) ── */}
-        <div className="relative z-20 flex flex-col h-full w-full max-w-[450px] mx-auto px-7 pt-20 pb-10">
+        <div className="relative z-20 flex flex-col h-full w-full mx-auto" style={{ maxWidth: 'min(450px, 100vw)', paddingLeft: 'clamp(20px, 5vw, 28px)', paddingRight: 'clamp(20px, 5vw, 28px)', paddingTop: 'clamp(48px, 10vh, 80px)', paddingBottom: 'clamp(24px, 4vh, 40px)' }}>
           
           {/* Top Half: Floating Badge */}
           <div className="flex-1 flex flex-col items-center justify-start pt-10">
             <div 
               key={`badge-${currentSlide}`}
-              className="relative flex items-center justify-center w-32 h-32 rounded-[2.5rem]"
+              className="relative flex items-center justify-center"
               style={{ 
+                width: 'min(128px, 30vw)', height: 'min(128px, 30vw)',
+                borderRadius: 'clamp(1.5rem, 5vw, 2.5rem)',
                 animation: 'floatBadge 4s ease-in-out infinite, revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                 background: 'rgba(255, 255, 255, 0.08)',
                 backdropFilter: 'blur(20px)',
@@ -137,7 +139,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate, onGoogleSig
             
             {/* Animated Text Block */}
             <div key={`text-${currentSlide}`} className="flex flex-col animate-reveal">
-              <h1 className="text-[2.2rem] leading-tight font-extrabold text-white mb-3 tracking-tight">
+              <h1 className="leading-tight font-extrabold text-white mb-3 tracking-tight" style={{ fontSize: 'clamp(1.6rem, 6vw, 2.2rem)' }}>
                 {slide.title}
               </h1>
               <p className="text-gray-300 text-base leading-[1.6] mb-6 drop-shadow-md">

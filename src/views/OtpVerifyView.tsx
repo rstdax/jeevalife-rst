@@ -47,8 +47,8 @@ const OtpVerifyView: React.FC<OtpVerifyViewProps> = ({ onBack, onVerify, phone, 
     : '';
 
   return (
-    <section className="flex flex-col flex-1 h-full px-6 pt-6 pb-[100px] overflow-y-auto"
-      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}>
+    <section className="flex flex-col flex-1 h-full pt-6 overflow-y-auto"
+      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}>
       <header className="flex items-center gap-4 mb-10">
         <button type="button" onClick={() => { sounds.click(); onBack(); }}
           className="w-10 h-10 flex justify-center items-center rounded-xl glass-panel text-muted hover:text-white transition-colors">

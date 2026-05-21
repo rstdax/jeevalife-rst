@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { sounds } from '../utils/audio';
 import type { ViewId } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -197,8 +197,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
 
   if (isEditing) {
     return (
-      <section className="flex flex-col flex-1 px-6 pt-6 pb-[100px] h-full overflow-y-auto"
-        style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}>
+      <section className="flex flex-col flex-1 pt-6 h-full overflow-y-auto"
+        style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}>
         <header className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold">Edit Profile</h2>
           <button onClick={handleSave} disabled={isSaving} className="text-sm font-bold disabled:opacity-50"
@@ -386,8 +386,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
 
   return (
     <>
-    <section id="profile-view" className="flex flex-col flex-1 px-6 pt-6 pb-[100px] h-full overflow-y-auto"
-      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}>
+    <section id="profile-view" className="flex flex-col flex-1 pt-6 h-full overflow-y-auto"
+      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}>
       <header className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-5">
           <div className="glass-panel overflow-hidden p-1" style={{ width: 70, height: 70, borderRadius: '50%' }}>
@@ -422,7 +422,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
                 <div key={b.label}
                   className="flex flex-col items-center gap-2 text-xs shrink-0"
                   style={{
-                    width: 'calc((100% - 36px) / 4)',
+                    width: 'clamp(60px, calc((100% - 36px) / 4), 80px)',
                     opacity: earned ? 1 : isNext ? 0.6 : 0.25,
                     filter: earned ? 'none' : 'grayscale(1)',
                   }}>
@@ -575,7 +575,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
               </div>
 
               {/* Type selector */}
-              <div className="grid grid-cols-4 gap-2 mb-4">
+              <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(70px, 1fr))' }}>
                 {([
                   { key: 'bug', label: 'Bug', icon: 'fa-solid fa-bug' },
                   { key: 'feature', label: 'Feature', icon: 'fa-solid fa-wand-magic-sparkles' },

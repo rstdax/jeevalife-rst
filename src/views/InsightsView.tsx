@@ -443,8 +443,8 @@ const InsightsView: React.FC = () => {
   );
 
   return (
-    <section id="insights-view" className="flex flex-col flex-1 px-6 pt-6 pb-[100px] h-full overflow-y-auto"
-      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards' }}>
+    <section id="insights-view" className="flex flex-col flex-1 pt-6 h-full overflow-y-auto"
+      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}>
       <header className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold">Your Insights</h2>
       </header>
@@ -484,7 +484,7 @@ const InsightsView: React.FC = () => {
 
             {/* Big Score */}
             <div className="flex items-end gap-3 mb-5">
-              <span className="text-6xl font-extrabold leading-none" style={{ fontFamily: 'var(--font-heading)', color: getScoreColor(todayCheckin.jeeva_score) }}>
+              <span className="font-extrabold leading-none" style={{ fontFamily: 'var(--font-heading)', color: getScoreColor(todayCheckin.jeeva_score), fontSize: 'clamp(2.5rem, 12vw, 3.75rem)' }}>
                 {todayCheckin.jeeva_score}
               </span>
               <div className="mb-1">
@@ -503,7 +503,7 @@ const InsightsView: React.FC = () => {
                 const isCritical = answerIndex === 3;
                 return (
                   <div key={key} className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 w-[80px] shrink-0">
+                    <div className="flex items-center gap-2 shrink-0" style={{ width: 'clamp(65px, 18vw, 80px)' }}>
                       <i className={`${Q_ICONS[i]} text-xs`} style={{ color: isCritical ? '#EF4444' : 'var(--color-muted)' }} />
                       <span className="text-xs" style={{ color: isCritical ? '#EF4444' : 'var(--color-muted)' }}>{Q_LABELS[i]}</span>
                     </div>

@@ -235,7 +235,7 @@ const ReflectionBook: React.FC<ReflectionBookProps> = ({ setOpened }) => {
   return (
     <div className="w-full flex flex-col items-center"
       style={{ animation: 'popIn 0.6s var(--ease-spring) forwards', opacity: 0, transform: 'translateY(20px) scale(0.95)' }}>
-      <div className="relative w-full" style={{ maxWidth: 320 }}>
+      <div className="relative w-full" style={{ maxWidth: 'min(320px, 85vw)' }}>
         <div className="rounded-2xl overflow-visible relative cursor-pointer"
           style={{
             marginLeft: 14,
@@ -359,8 +359,8 @@ const CheckInView: React.FC<CheckInViewProps> = ({ onBack, onComplete }) => {
         onBack={() => setReflectionOpened(false)}
       />
     )}
-    <section id="check-in-view" className="flex flex-col flex-1 px-6 pt-6 pb-[100px] h-full overflow-y-auto"
-      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', display: showReflection && reflectionOpened ? 'none' : undefined }}>
+    <section id="check-in-view" className="flex flex-col flex-1 pt-6 h-full overflow-y-auto"
+      style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', display: showReflection && reflectionOpened ? 'none' : undefined, paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}>
       <header className="flex items-center mb-5">
         <button onClick={onBack} className="text-white text-xl p-2 bg-transparent border-none cursor-pointer">
           <i className="fa-solid fa-arrow-left" />
@@ -394,12 +394,13 @@ const CheckInView: React.FC<CheckInViewProps> = ({ onBack, onComplete }) => {
         ) : q ? (
           <div key={animKey} className="glass-card w-full"
             style={{ animation: 'popIn 0.6s var(--ease-spring) forwards', opacity: 0, transform: 'translateY(20px) scale(0.95)' }}>
-            <h2 className="text-2xl font-bold mb-8 text-center">{q.q}</h2>
+            <h2 style={{ fontSize: 'clamp(1.25rem, 5vw, 1.5rem)' }} className="font-bold mb-8 text-center">{q.q}</h2>
             <div className="flex flex-col gap-3 w-full">
               {q.opts.map((opt, i) => (
                 <div key={i} onClick={() => handleOption(i)}
-                  className="flex items-center gap-4 px-5 py-4 rounded-2xl text-white text-base cursor-pointer"
+                  className="flex items-center gap-3 rounded-2xl text-white text-base cursor-pointer"
                   style={{
+                    padding: 'clamp(10px, 3vw, 16px) clamp(12px, 3.5vw, 20px)',
                     background: selected === i ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)',
                     border: selected === i ? '1px solid var(--color-green)' : '1px solid var(--color-glass-border)',
                     transition: 'all 0.2s var(--ease-spring)',

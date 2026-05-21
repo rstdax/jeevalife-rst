@@ -200,7 +200,7 @@ const JournalView: React.FC = () => {
           </div>
 
           {/* Content Body */}
-          <div className="flex-1 px-6 pt-8 pb-[120px] overflow-y-auto">
+          <div className="flex-1 pt-8 overflow-y-auto" style={{ paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(100px, 16vw, 120px) + env(safe-area-inset-bottom, 0px))' }}>
             {readingEntry.text.startsWith('Q:') ? (
               <div className="flex flex-col gap-5">
                 {readingEntry.text.split('\n\n').map((part, i) => (
@@ -221,8 +221,8 @@ const JournalView: React.FC = () => {
       )}
 
       {/* ── Main Journal View ── */}
-      <section id="journal-view" className="flex flex-col flex-1 px-6 pt-6 pb-[100px] h-full overflow-y-auto"
-        style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', display: (showWritePage || readingEntry) ? 'none' : undefined }}>
+      <section id="journal-view" className="flex flex-col flex-1 pt-6 h-full overflow-y-auto"
+        style={{ animation: 'fadeIn 0.4s var(--ease-smooth) forwards', display: (showWritePage || readingEntry) ? 'none' : undefined, paddingLeft: 'clamp(16px, 4vw, 24px)', paddingRight: 'clamp(16px, 4vw, 24px)', paddingBottom: 'calc(clamp(85px, 14vw, 100px) + env(safe-area-inset-bottom, 0px))' }}>
         <header className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold">Your Journey</h2>
         </header>
@@ -258,7 +258,7 @@ const JournalView: React.FC = () => {
                 <i className="fa-solid fa-chevron-right text-xs" />
               </button>
             </div>
-            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)', gap: 'clamp(4px, 1.5vw, 8px)' }}>
               {calendarDays.map((day, i) => {
                 if (!isExpanded && i >= 14) return null;
                 let bg = 'rgba(255,255,255,0.05)';

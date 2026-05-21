@@ -56,18 +56,18 @@ const UserFeedbackPopup: React.FC<UserFeedbackPopupProps> = ({ milestone, userId
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-end justify-center px-4 pb-6"
-      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}
+      className="fixed inset-0 z-[90] flex items-end justify-center"
+      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', padding: 'clamp(12px, 3vw, 16px)', paddingBottom: 'clamp(16px, 4vw, 24px)' }}
       onClick={e => { if (e.target === e.currentTarget && done) onClose(); }}
     >
       <div
         className="w-full flex flex-col"
         style={{
-          maxWidth: 480,
+          maxWidth: 'min(480px, 100vw)',
           background: 'linear-gradient(160deg, #0d2424 0%, #031515 100%)',
           border: '1px solid rgba(0,242,254,0.15)',
-          borderRadius: 28,
-          padding: '28px 24px 24px',
+          borderRadius: 'clamp(20px, 5vw, 28px)',
+          padding: 'clamp(20px, 5vw, 28px) clamp(16px, 4vw, 24px) clamp(16px, 4vw, 24px)',
           animation: 'slideUp 0.45s var(--ease-spring) forwards',
           maxHeight: '90dvh',
           overflowY: 'auto',
