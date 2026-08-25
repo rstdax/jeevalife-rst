@@ -59,6 +59,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
   const [weightLbs, setWeightLbs] = useState('');
 
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [role, setRole] = useState('Student');
+  const [department, setDepartment] = useState('');
   const [emergencyPhone, setEmergencyPhone] = useState('');
   const [emergencyRelation, setEmergencyRelation] = useState('');
 
@@ -87,6 +89,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
     }
 
     setSelectedGoals(profile.goals ?? ['Calm Mind']);
+    setRole(profile.role ?? 'Student');
+    setDepartment(profile.department ?? '');
     setEmergencyPhone(profile.emergency_contact_phone ?? '');
     setEmergencyRelation(profile.emergency_contact_relation ?? '');
   }, [profile, user]);
@@ -187,6 +191,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
       height: getHeightCm() || null,
       weight: getWeightKg() || null,
       goals: selectedGoals.length > 0 ? selectedGoals : ['Calm Mind'],
+      role,
+      department: department.trim() || null,
       emergency_contact_phone: emergencyPhone || null,
       emergency_contact_relation: emergencyRelation || null,
     });
@@ -223,6 +229,29 @@ const ProfileView: React.FC<ProfileViewProps> = ({ sfxEnabled, onToggleSfx, onNa
                   style={{ background: 'rgba(255,255,255,0.05)' }} placeholder={f.placeholder} />
               </div>
             ))}
+
+            {/* Role dropdown */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Role</label>
+              <div className="relative">
+                <select value={role} onChange={e => setRole(e.target.value)}
+                  className="w-full p-4 rounded-xl text-white outline-none border-none text-sm appearance-none cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}>
+                  {['Student', 'Faculty', 'Staff', 'Public'].map(r => (
+                    <option key={r} value={r} style={{ background: '#031515', color: 'white' }}>{r}</option>
+                  ))}
+                </select>
+                <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: 'var(--color-muted)' }} />
+              </div>
+            </div>
+
+            {/* Department */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Department</label>
+              <input value={department} onChange={e => setDepartment(e.target.value)}
+                className="glass-panel p-4 rounded-xl text-white outline-none border-none text-sm"
+                style={{ background: 'rgba(255,255,255,0.05)' }} placeholder="Department" />
+            </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {[

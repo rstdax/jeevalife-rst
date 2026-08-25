@@ -14,6 +14,7 @@ import AboutUsView from './views/AboutUsView';
 import ContactUsView from './views/ContactUsView';
 import PrivacyPolicyView from './views/PrivacyPolicyView';
 import TermsView from './views/TermsView';
+import ProgramsView from './views/ProgramsView';
 import StreakPopup from './components/StreakPopup';
 import BetaDisclaimerPopup from './components/BetaDisclaimerPopup';
 import UserFeedbackPopup from './components/UserFeedbackPopup';
@@ -352,6 +353,8 @@ function App() {
         return <PrivacyPolicyView onBack={() => handleNavigate('profile')} />;
       case 'terms':
         return <TermsView onBack={() => handleNavigate('profile')} />;
+      case 'programs':
+        return <ProgramsView onBack={() => handleNavigate('dashboard')} />;
       case 'onboarding':
         return <OnboardingView onNavigate={handleNavigate} onGoogleSignUp={handleGoogleSignUp} />;
       case 'phone-sign-in':

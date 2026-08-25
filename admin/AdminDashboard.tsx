@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminFeedbackView from './AdminFeedbackView';
 import AdminUsersView from './AdminUsersView';
 import AdminQuestionsView from './AdminQuestionsView';
+import AdminProgramsView from './AdminProgramsView';
 import { adminDb as db } from './adminFirebase';
 import { collection, getCountFromServer } from 'firebase/firestore';
 
@@ -21,7 +22,7 @@ const C = {
 
 export { C };   // shared with child views
 
-type AdminTab = 'dashboard' | 'feedback' | 'users' | 'questions';
+type AdminTab = 'dashboard' | 'feedback' | 'users' | 'questions' | 'programs';
 
 interface AdminDashboardProps { onExit: () => void; }
 
@@ -48,6 +49,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
     { key: 'feedback',  icon: '💬', label: 'Feedback' },
     { key: 'users',     icon: '👥', label: 'Users' },
     { key: 'questions', icon: '❓', label: '60s Questions' },
+    { key: 'programs',  icon: '📅', label: 'Programs' },
   ];
 
   return (
@@ -152,6 +154,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
         {tab === 'feedback'  && <AdminFeedbackView />}
         {tab === 'users'     && <AdminUsersView />}
         {tab === 'questions' && <AdminQuestionsView />}
+        {tab === 'programs'  && <AdminProgramsView />}
       </main>
     </div>
   );

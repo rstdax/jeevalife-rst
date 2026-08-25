@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { sounds, toggleTherapy } from '../utils/audio';
+import { sounds } from '../utils/audio';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import type { ViewId } from '../types';
 
 interface Reminder {
@@ -12,19 +12,31 @@ interface Reminder {
   enabled: boolean;
 }
 
+interface Program {
+  id: string;
+  title: string;
+  organizer: string;
+  date_start: string;
+  date_end: string;
+  venue: string;
+  status: 'active' | 'expired';
+}
+
 interface DashboardViewProps {
   sfxEnabled: boolean;
   onStartCheckIn: () => void;
-  streakCount: number; // Fallback from parent
+  streakCount: number;
   jeevaScore: number | null;
   onNavigate: (view: ViewId) => void;
   reminders: Reminder[];
 }
 
-const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckIn, streakCount, jeevaScore, onNavigate, reminders }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled: _sfxEnabled, onStartCheckIn, streakCount, jeevaScore, onNavigate, reminders }) => {
   const { user, profile } = useAuth();
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false); void isPlaying; void setIsPlaying;
   const [actualStreak, setActualStreak] = useState(streakCount || 0);
+  const [activeProgram, setActiveProgram] = useState<Program | null>(null);
+  const [isJoined, setIsJoined] = useState(false);
 
   // Fetch the latest streak directly from Firebase on load
   useEffect(() => {
@@ -48,6 +60,24 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
       setActualStreak(streakCount);
     }
   }, [streakCount]);
+
+  // Fetch one active program for homepage card
+  useEffect(() => {
+    (async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'programs'), where('status', '==', 'active')));
+        if (!snap.empty) {
+          const prog = { id: snap.docs[0].id, ...snap.docs[0].data() } as Program;
+          setActiveProgram(prog);
+          if (user) {
+            const docId = `${user.uid}_${prog.id}`;
+            const pSnap = await getDoc(doc(db, 'program_participants', docId));
+            setIsJoined(pSnap.exists() && pSnap.data()?.participating === true);
+          }
+        }
+      } catch { /* silent */ }
+    })();
+  }, [user]);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -249,28 +279,46 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sfxEnabled, onStartCheckI
 
         <div className="glass-card mt-4" style={{ animation: 'popIn 0.6s var(--ease-spring) forwards', animationDelay: '0.3s', opacity: 0, transform: 'translateY(20px) scale(0.95)' }}>
           <div className="flex items-center justify-between mb-1">
-            <h3 className="text-sm font-semibold">Sound Therapy</h3>
-            <button onClick={() => { sounds.click(); onNavigate('tools'); }}
+            <h3 className="text-sm font-semibold">Programs</h3>
+            <button onClick={() => { sounds.click(); onNavigate('programs'); }}
               className="flex items-center gap-1 text-xs"
               style={{ color: 'var(--color-muted)' }}>
-              More <i className="fa-solid fa-chevron-right text-[10px]" />
+              View All <i className="fa-solid fa-chevron-right text-[10px]" />
             </button>
           </div>
-          <p className="text-xs mb-2" style={{ color: 'var(--color-muted)' }}>Recommended for your current stress level</p>
-          <div className="glass-panel flex items-center gap-4 p-3 rounded-2xl" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="flex justify-center items-center rounded-full text-lg" style={{ color: 'var(--color-gold)', background: 'rgba(212,175,55,0.1)', width: 40, height: 40 }}>
-              <i className="fa-solid fa-headphones-simple" />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-base font-semibold mb-0.5">432Hz Deep Calm</h4>
-              <p className="text-sm" style={{ color: 'var(--color-muted)' }}>Relieve Tension</p>
-            </div>
-            <button onClick={() => { if (!sfxEnabled) { alert('Enable Sound Effects in Profile.'); return; } setIsPlaying(toggleTherapy(sfxEnabled)); }}
-              className="flex justify-center items-center rounded-full text-white cursor-pointer"
-              style={{ width: 40, height: 40, background: isPlaying ? 'var(--color-teal-light)' : 'transparent', border: '1px solid var(--color-teal-light)' }}>
-              <i className={isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play'} />
+          {activeProgram ? (
+            <button onClick={() => { sounds.click(); onNavigate('programs'); }}
+              className="w-full mt-3 glass-panel flex items-start gap-4 p-3 rounded-2xl text-left hover:bg-white/5 transition-colors active:scale-[0.99]"
+              style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <i className="fa-regular fa-calendar-check" style={{ color: 'var(--color-green)' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-sm font-semibold leading-snug">{activeProgram.title}</h4>
+                  {isJoined && (
+                    <span className="shrink-0 px-2 py-0.5 rounded-lg text-[10px] font-bold"
+                      style={{ background: 'rgba(16,185,129,0.12)', color: 'var(--color-green)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                      Registered
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>{activeProgram.organizer}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                  {new Date(activeProgram.date_start).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} – {new Date(activeProgram.date_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {activeProgram.venue}
+                </p>
+              </div>
+              <i className="fa-solid fa-chevron-right text-[10px] mt-1 shrink-0" style={{ color: 'var(--color-muted)' }} />
             </button>
-          </div>
+          ) : (
+            <button onClick={() => { sounds.click(); onNavigate('programs'); }}
+              className="w-full mt-3 glass-panel flex items-center justify-center gap-2 p-4 rounded-2xl text-sm"
+              style={{ color: 'var(--color-muted)', border: '1px solid var(--color-glass-border)' }}>
+              <i className="fa-regular fa-calendar text-base" />
+              No active programs right now
+            </button>
+          )}
         </div>
       </main>
     </section>

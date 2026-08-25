@@ -24,6 +24,8 @@ export interface Profile {
   weight: number | null;
   goals: string[] | null;
   avatar_url: string | null;
+  role: string | null;
+  department: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relation: string | null;
   created_at: string;
@@ -86,6 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         age: null, height: null, weight: null,
         goals: ['Calm Mind'],
         avatar_url: u.photoURL ?? null,
+        role: null,
+        department: null,
         emergency_contact_phone: null,
         emergency_contact_relation: null,
         created_at: now,

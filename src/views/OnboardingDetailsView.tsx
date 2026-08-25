@@ -8,6 +8,7 @@ interface OnboardingDetailsViewProps {
 }
 
 const GOALS = ['Stay Hydrated', 'Calm Mind', 'Improve Sleep', 'Boost Energy', 'Weight Management', 'Reduce Stress'];
+const ROLES = ['Student', 'Faculty', 'Staff', 'Public'];
 
 // Height helpers
 const feetInchesToCm = (ft: number, inch: number) => (ft * 30.48) + (inch * 2.54);
@@ -37,6 +38,8 @@ const OnboardingDetailsView: React.FC<OnboardingDetailsViewProps> = ({ onComplet
   const [weightLbs, setWeightLbs] = useState('');
 
   const [goals, setGoals] = useState<string[]>([]);
+  const [role, setRole] = useState('Student');
+  const [department, setDepartment] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -99,6 +102,8 @@ const OnboardingDetailsView: React.FC<OnboardingDetailsViewProps> = ({ onComplet
       height: heightVal,
       weight: weightVal,
       goals: goals.length > 0 ? goals : ['Calm Mind'],
+      role,
+      department: department.trim() || null,
       bio: 'Wellness Explorer',
     });
 
@@ -116,12 +121,37 @@ const OnboardingDetailsView: React.FC<OnboardingDetailsViewProps> = ({ onComplet
         <p className="text-muted text-sm mb-10">Tell us a bit about yourself to personalize your experience.</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-          {/* Name */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Display Name</label>
-            <input type="text" required value={name} onChange={e => setName(e.target.value)}
-              className="glass-panel p-4 rounded-xl text-white outline-none border border-white/5 text-sm focus:border-white/20 transition-colors bg-transparent"
-              placeholder="Confirm your name" />
+          {/* Name + Role + Department — same card */}
+          <div className="glass-card flex flex-col gap-5 p-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Display Name</label>
+              <input type="text" required value={name} onChange={e => setName(e.target.value)}
+                className="glass-panel p-4 rounded-xl text-white outline-none border border-white/5 text-sm focus:border-white/20 transition-colors bg-transparent"
+                placeholder="Confirm your name" />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Role</label>
+              <div className="relative">
+                <select
+                  value={role}
+                  onChange={e => setRole(e.target.value)}
+                  className="w-full glass-panel p-4 rounded-xl text-white outline-none border border-white/5 text-sm focus:border-white/20 transition-colors bg-transparent appearance-none cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}>
+                  {ROLES.map(r => (
+                    <option key={r} value={r} style={{ background: '#031515', color: 'white' }}>{r}</option>
+                  ))}
+                </select>
+                <i className="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none" style={{ color: 'var(--color-muted)' }} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Department</label>
+              <input type="text" value={department} onChange={e => setDepartment(e.target.value)}
+                className="glass-panel p-4 rounded-xl text-white outline-none border border-white/5 text-sm focus:border-white/20 transition-colors bg-transparent"
+                placeholder="Department" />
+            </div>
           </div>
 
           {/* Age */}
