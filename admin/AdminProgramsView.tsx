@@ -220,93 +220,116 @@ const AdminProgramsView: React.FC = () => {
 
           {/* Participants + Attendance — centered modal */}
           {selected && editingId === null && (
-            <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)', padding: 24 }}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.5)', padding: 24 }}
               onClick={e => { if (e.target === e.currentTarget) setSelected(null); }}>
-              <div style={{ width: '100%', maxWidth: 560, background: C.white, border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '85vh', overflowY: 'auto' }}>
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+              <div style={{ width: '100%', maxWidth: 620, background: '#fff', borderRadius: 10, boxShadow: '0 8px 40px rgba(0,0,0,0.18)', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+                {/* Modal header bar */}
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC', flexShrink: 0 }}>
                   <div>
-                    <h2 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>Attendance</h2>
-                    <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{selected.title}</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: '#0F172A', margin: 0 }}>{selected.title}</p>
+                    <p style={{ fontSize: 12, color: '#64748B', margin: '2px 0 0' }}>{selected.organizer} · {fmt(selected.date_start)} – {fmt(selected.date_end)}</p>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     {participants.length > 0 && (
                       <>
-                        <button onClick={downloadExcel} style={{ padding: '6px 12px', borderRadius: 7, background: C.greenBg, border: `1px solid ${C.greenBdr}`, fontSize: 12, fontWeight: 700, color: C.green, cursor: 'pointer' }}>
-                          📊 Excel
+                        <button onClick={downloadExcel} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: 12, fontWeight: 600, color: '#15803D', cursor: 'pointer' }}>
+                          <span>↓</span> Excel
                         </button>
-                        <button onClick={downloadPDF} style={{ padding: '6px 12px', borderRadius: 7, background: '#FEE2E2', border: '1px solid #FCA5A5', fontSize: 12, fontWeight: 700, color: C.red, cursor: 'pointer' }}>
-                          📄 PDF
+                        <button onClick={downloadPDF} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, background: '#FFF1F2', border: '1px solid #FECDD3', fontSize: 12, fontWeight: 600, color: '#BE123C', cursor: 'pointer' }}>
+                          <span>↓</span> PDF
                         </button>
                       </>
                     )}
-                    <button onClick={() => setSelected(null)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, width: 32, height: 32, cursor: 'pointer', color: C.muted, fontSize: 15, flexShrink: 0 }}>✕</button>
+                    <button onClick={() => setSelected(null)} style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', color: '#64748B', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                   </div>
                 </div>
 
-                {partLoading ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', border: `3px solid ${C.border}`, borderTopColor: C.accent, animation: 'spin 0.8s linear infinite' }} />
+                {/* Stats row */}
+                {participants.length > 0 && (
+                  <div style={{ padding: '10px 20px', borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 24, flexShrink: 0, background: '#fff' }}>
+                    {[
+                      { label: 'Registered', value: participants.length, color: '#3B82F6' },
+                      { label: 'Present', value: participants.filter(p => p.attendance === 'present').length, color: '#16A34A' },
+                      { label: 'Absent', value: participants.filter(p => p.attendance === 'absent').length, color: '#DC2626' },
+                      { label: 'Not Marked', value: participants.filter(p => !p.attendance).length, color: '#94A3B8' },
+                    ].map(s => (
+                      <div key={s.label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                        <span style={{ fontSize: 20, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</span>
+                        <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>{s.label}</span>
+                      </div>
+                    ))}
                   </div>
-                ) : participants.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 20px', color: C.muted, fontSize: 13 }}>
-                    <span style={{ fontSize: 36, display: 'block', marginBottom: 12, opacity: 0.3 }}>👥</span>
-                    No registrations yet for this program.
-                  </div>
-                ) : (
-                  <>
-                    {/* Summary */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
-                      {[
-                        { label: 'Registered', value: participants.length, color: C.accent, bg: C.accentBg },
-                        { label: 'Present', value: participants.filter(p => p.attendance === 'present').length, color: C.green, bg: C.greenBg },
-                        { label: 'Absent', value: participants.filter(p => p.attendance === 'absent').length, color: C.red, bg: C.redBg },
-                      ].map(s => (
-                        <div key={s.label} style={{ background: s.bg, borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
-                          <p style={{ fontSize: 24, fontWeight: 800, color: s.color, margin: 0 }}>{s.value}</p>
-                          <p style={{ fontSize: 11, color: s.color, fontWeight: 600, margin: 0 }}>{s.label}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Participant rows */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                      {participants.map((pt, idx) => (
-                        <div key={pt.id} style={{ padding: '14px 0', borderBottom: `1px solid ${C.border}`, background: idx % 2 === 0 ? C.white : C.bg }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
-                              {(pt.user_name ?? 'U').charAt(0).toUpperCase()}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{pt.user_name}</p>
-                              <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>{pt.user_role} · {pt.user_dept}</p>
-                            </div>
-                            {pt.attendance && (
-                              <span style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: pt.attendance === 'present' ? C.greenBg : C.redBg, color: pt.attendance === 'present' ? C.green : C.red, border: `1px solid ${pt.attendance === 'present' ? C.greenBdr : C.redBdr}` }}>
-                                {pt.attendance === 'present' ? '✓ Present' : '✗ Absent'}
-                              </span>
-                            )}
-                          </div>
-                          {/* Attendance buttons */}
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            {(['present', 'absent', null] as const).map(att => (
-                              <button key={String(att)} onClick={() => updateAttendance(pt, att)}
-                                disabled={savingAtt === pt.id}
-                                style={{
-                                  flex: 1, padding: '7px 10px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                                  background: pt.attendance === att ? (att === 'present' ? C.greenBg : att === 'absent' ? C.redBg : C.bg) : C.bg,
-                                  color: pt.attendance === att ? (att === 'present' ? C.green : att === 'absent' ? C.red : C.muted) : C.muted,
-                                  border: `1px solid ${pt.attendance === att ? (att === 'present' ? C.greenBdr : att === 'absent' ? C.redBdr : C.border) : C.border}`,
-                                }}>
-                                {att === null ? 'Clear' : att === 'present' ? '✓ Present' : '✗ Absent'}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
                 )}
+
+                {/* Body */}
+                <div style={{ overflowY: 'auto', flex: 1 }}>
+                  {partLoading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+                      <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid #E2E8F0', borderTopColor: '#6366F1', animation: 'spin 0.8s linear infinite' }} />
+                      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                    </div>
+                  ) : participants.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '48px 20px', color: '#94A3B8', fontSize: 13 }}>
+                      No registrations yet for this program.
+                    </div>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                          <th style={{ padding: '9px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', width: '35%' }}>Participant</th>
+                          <th style={{ padding: '9px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', width: '20%' }}>Role / Dept</th>
+                          <th style={{ padding: '9px 14px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', width: '20%' }}>Status</th>
+                          <th style={{ padding: '9px 14px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', width: '25%' }}>Mark</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {participants.map((pt, idx) => (
+                          <tr key={pt.id} style={{ borderBottom: '1px solid #F1F5F9', background: idx % 2 === 0 ? '#fff' : '#FAFAFA' }}>
+                            <td style={{ padding: '11px 20px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#EEF2FF', color: '#6366F1', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  {(pt.user_name ?? 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <span style={{ fontWeight: 600, color: '#0F172A' }}>{pt.user_name}</span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '11px 14px', color: '#64748B', fontSize: 12 }}>
+                              {pt.user_role}<br />
+                              <span style={{ fontSize: 11, color: '#94A3B8' }}>{pt.user_dept}</span>
+                            </td>
+                            <td style={{ padding: '11px 14px', textAlign: 'center' }}>
+                              {pt.attendance === 'present' && <span style={{ background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', borderRadius: 5, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>✓ Present</span>}
+                              {pt.attendance === 'absent'  && <span style={{ background: '#FFF1F2', color: '#BE123C', border: '1px solid #FECDD3', borderRadius: 5, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>✗ Absent</span>}
+                              {!pt.attendance && <span style={{ color: '#CBD5E1', fontSize: 11 }}>—</span>}
+                            </td>
+                            <td style={{ padding: '11px 14px' }}>
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                {(['present', 'absent', null] as const).map(att => (
+                                  <button key={String(att)} onClick={() => updateAttendance(pt, att)} disabled={savingAtt === pt.id}
+                                    style={{
+                                      padding: '5px 10px', borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1px solid',
+                                      background: pt.attendance === att
+                                        ? (att === 'present' ? '#F0FDF4' : att === 'absent' ? '#FFF1F2' : '#F1F5F9')
+                                        : '#fff',
+                                      color: pt.attendance === att
+                                        ? (att === 'present' ? '#15803D' : att === 'absent' ? '#BE123C' : '#64748B')
+                                        : '#94A3B8',
+                                      borderColor: pt.attendance === att
+                                        ? (att === 'present' ? '#BBF7D0' : att === 'absent' ? '#FECDD3' : '#CBD5E1')
+                                        : '#E2E8F0',
+                                    }}>
+                                    {att === null ? 'Clear' : att === 'present' ? '✓' : '✗'}
+                                  </button>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
             </div>
           )}
