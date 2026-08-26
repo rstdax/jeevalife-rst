@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import {
   collection, getDocs, query, where, doc,
-  setDoc, deleteDoc, getDoc,
+  setDoc, deleteDoc,
 } from 'firebase/firestore';
 
 interface Program {
@@ -17,11 +17,6 @@ interface Program {
   description: string;
   status: 'active' | 'expired';
   created_at: string;
-}
-
-interface ParticipantDoc {
-  participating: boolean;
-  attendance?: 'present' | 'absent' | null;
 }
 
 interface ProgramsViewProps {
@@ -60,12 +55,10 @@ const ProgramsView: React.FC<ProgramsViewProps> = ({ onBack }) => {
           const map: Record<string, boolean> = {};
           const attMap: Record<string, 'present' | 'absent' | null> = {};
           pSnap.docs.forEach(d => {
-            const data = d.data() as ParticipantDoc;
-            map[data.participating ? (d.data() as { program_id: string }).program_id : ''] = data.participating;
-            // Use doc id format uid_programId
-            const programId = d.id.split('_').slice(1).join('_');
+            const data = d.data();
+            const programId = data.program_id as string;
             if (data.participating) map[programId] = true;
-            attMap[programId] = data.attendance ?? null;
+            attMap[programId] = (data.attendance as 'present' | 'absent' | null) ?? null;
           });
           setJoined(map);
           setAttendance(attMap);
@@ -240,7 +233,7 @@ const ProgramsView: React.FC<ProgramsViewProps> = ({ onBack }) => {
   );
 };
 
-const ProgramCard: React.FC<{ program: Program; isJoined: boolean; onClick: () => void }> = ({ program, isJoined, onClick }) => (
+const ProgramCard: React.FC<{ program: Program; isJoined: boolean; attendance?: 'present' | 'absent' | null; onClick: () => void }> = ({ program, isJoined, attendance, onClick }) => (
   <button onClick={onClick}
     className="glass-card text-left w-full flex items-start gap-4 hover:scale-[1.01] transition-transform active:scale-[0.99]"
     style={{
@@ -253,14 +246,28 @@ const ProgramCard: React.FC<{ program: Program; isJoined: boolean; onClick: () =
         style={{ color: program.status === 'active' ? 'var(--color-green)' : 'var(--color-muted)' }} />
     </div>
     <div className="flex-1 min-w-0">
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-bold leading-snug">{program.title}</h3>
-        {isJoined && (
-          <span className="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold"
-            style={{ background: 'rgba(16,185,129,0.12)', color: 'var(--color-green)', border: '1px solid rgba(16,185,129,0.25)' }}>
-            Registered
-          </span>
-        )}
+        <div className="flex gap-1.5 flex-wrap shrink-0">
+          {isJoined && (
+            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold"
+              style={{ background: 'rgba(16,185,129,0.12)', color: 'var(--color-green)', border: '1px solid rgba(16,185,129,0.25)' }}>
+              Registered
+            </span>
+          )}
+          {attendance === 'present' && (
+            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold"
+              style={{ background: 'rgba(16,185,129,0.15)', color: '#16A34A', border: '1px solid rgba(16,185,129,0.3)' }}>
+              ✓ Present
+            </span>
+          )}
+          {attendance === 'absent' && (
+            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold"
+              style={{ background: 'rgba(239,68,68,0.12)', color: '#DC2626', border: '1px solid rgba(239,68,68,0.25)' }}>
+              ✗ Absent
+            </span>
+          )}
+        </div>
       </div>
       <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>{program.organizer}</p>
       <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>

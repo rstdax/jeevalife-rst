@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { adminDb as db } from './adminFirebase';
 import { collection, getDocs, query, where, orderBy, limit, startAfter, type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 
 const C = { bg: '#F8FAFC', white: '#FFFFFF', border: '#E2E8F0', text: '#0F172A', muted: '#64748B', rowHover: '#F1F5F9', accent: '#6366F1', accentBg: '#EEF2FF', accentBdr: '#C7D2FE' };
 
-interface UserProfile { id: string; name: string|null; bio: string|null; age: number|null; height: number|null; weight: number|null; goals: string[]|null; avatar_url: string|null; emergency_contact_phone: string|null; emergency_contact_relation: string|null; created_at: string; updated_at: string; }
+interface UserProfile { id: string; name: string|null; bio: string|null; age: number|null; height: number|null; weight: number|null; goals: string[]|null; avatar_url: string|null; role: string|null; department: string|null; emergency_contact_phone: string|null; emergency_contact_relation: string|null; created_at: string; updated_at: string; }
 interface CheckinRecord { id: string; jeeva_score: number; mood: number; energy: number; stress: number; sleep: number; focus: number; created_at: string; }
 interface JournalEntry { id: string; text: string; created_at: string; }
+interface ProgramParticipation { id: string; program_id: string; program_title: string; participating: boolean; joined_at: string; attendance?: 'present' | 'absent' | null; }
 
 const LABELS = {
   mood:   ['Radiant','Content','Low','Disturbed'],
@@ -27,7 +30,7 @@ const AdminUsersView: React.FC = () => {
   const [checkins, setCheckins]     = useState<CheckinRecord[]>([]);
   const [days, setDays]             = useState(7);
   const [ciLoading, setCiLoading]   = useState(false);
-  const [userTab, setUserTab]       = useState<'profile'|'insights'|'reflections'>('profile');
+  const [userTab, setUserTab]       = useState<'profile'|'insights'|'reflections'|'programs'>('profile');
 
   // Reflections state
   const [reflections, setReflections]       = useState<JournalEntry[]>([]);
@@ -36,6 +39,13 @@ const AdminUsersView: React.FC = () => {
   const [refHasMore, setRefHasMore]         = useState(false);
   const [refLoadingMore, setRefLoadingMore] = useState(false);
   const [readingEntry, setReadingEntry]     = useState<JournalEntry|null>(null);
+
+  // Programs state
+  const [userPrograms, setUserPrograms]     = useState<ProgramParticipation[]>([]);
+  const [progLoading, setProgLoading]       = useState(false);
+
+  // Export state
+  const [exporting, setExporting]           = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -59,11 +69,11 @@ const AdminUsersView: React.FC = () => {
     setSelected(u);
     setUserTab('profile');
     loadCheckins(u.id, days);
-    // Reset reflections when switching user
     setReflections([]);
     setRefLastDoc(null);
     setRefHasMore(false);
     setReadingEntry(null);
+    setUserPrograms([]);
   };
 
   const loadReflections = async (uid: string, after?: QueryDocumentSnapshot<DocumentData>) => {
@@ -82,6 +92,133 @@ const AdminUsersView: React.FC = () => {
   };
 
   const changeDay  = (d: number) => { setDays(d); if (selected) loadCheckins(selected.id, d); };
+
+  const loadUserPrograms = async (uid: string) => {
+    setProgLoading(true);
+    try {
+      const snap = await getDocs(query(collection(db, 'program_participants'), where('user_id', '==', uid)));
+      setUserPrograms(snap.docs.map(d => ({ id: d.id, ...d.data() } as ProgramParticipation)));
+    } catch { /* silent */ }
+    setProgLoading(false);
+  };
+
+  const exportExcel = async () => {
+    if (!selected) return;
+    setExporting(true);
+    try {
+      const wb = XLSX.utils.book_new();
+      // Profile sheet
+      const cmToFtStr = (cm: number) => { const i = cm/2.54; return `${Math.floor(i/12)}ft ${Math.round(i%12)}in`; };
+      const profileData = [[
+        'Name','Age','Height','Weight','Role','Department','Bio','Goals','Emergency Phone','Emergency Relation','Joined'
+      ],[
+        selected.name ?? '',
+        selected.age ?? '',
+        selected.height ? `${cmToFtStr(selected.height)} (${Math.round(selected.height)}cm)` : '',
+        selected.weight ? `${selected.weight.toFixed(1)} kg` : '',
+        (selected as UserProfile & { role?: string }).role ?? '',
+        (selected as UserProfile & { department?: string }).department ?? '',
+        selected.bio ?? '',
+        (selected.goals ?? []).join(', '),
+        selected.emergency_contact_phone ?? '',
+        selected.emergency_contact_relation ?? '',
+        new Date(selected.created_at).toLocaleDateString('en-IN'),
+      ]];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(profileData), 'Profile');
+
+      // Check-ins sheet
+      if (checkins.length > 0) {
+        const ciData = [['Date','Jeeva Score','Mood','Energy','Stress','Sleep','Focus'],
+          ...checkins.map(c => [
+            new Date(c.created_at).toLocaleDateString('en-IN'),
+            c.jeeva_score,
+            LABELS.mood[c.mood] ?? '', LABELS.energy[c.energy] ?? '',
+            LABELS.stress[c.stress] ?? '', LABELS.sleep[c.sleep] ?? '',
+            LABELS.focus[c.focus] ?? '',
+          ])];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ciData), 'Check-ins');
+      }
+
+      // Programs sheet
+      if (userPrograms.length > 0) {
+        const pData = [['Program','Registered','Attendance'],
+          ...userPrograms.map(p => [p.program_title, p.participating ? 'Yes' : 'No', p.attendance ?? 'Not marked'])];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pData), 'Programs');
+      }
+
+      XLSX.writeFile(wb, `${selected.name ?? 'user'}_data.xlsx`);
+    } catch(e) { console.error(e); }
+    setExporting(false);
+  };
+
+  const exportPDF = async () => {
+    if (!selected) return;
+    setExporting(true);
+    try {
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+      const cmToFtStr = (cm: number) => { const i = cm/2.54; return `${Math.floor(i/12)}ft ${Math.round(i%12)}in`; };
+      let y = 20;
+      const line = (text: string, x = 15, size = 11, bold = false) => {
+        pdf.setFontSize(size); pdf.setFont('helvetica', bold ? 'bold' : 'normal');
+        pdf.text(text, x, y); y += size * 0.5 + 2;
+      };
+      const hline = () => { pdf.setDrawColor(200,200,200); pdf.line(15, y, 195, y); y += 4; };
+
+      line('JeevaLife — User Report', 15, 16, true);
+      line(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 15, 9);
+      y += 4; hline();
+
+      line('PROFILE', 15, 13, true); y += 2;
+      const p = selected;
+      [
+        ['Name', p.name ?? '—'], ['Age', p.age ? `${p.age} yrs` : '—'],
+        ['Height', p.height ? `${cmToFtStr(p.height)} (${Math.round(p.height)}cm)` : '—'],
+        ['Weight', p.weight ? `${p.weight.toFixed(1)} kg` : '—'],
+        ['Role', (p as UserProfile & { role?: string }).role ?? '—'],
+        ['Department', (p as UserProfile & { department?: string }).department ?? '—'],
+        ['Goals', (p.goals ?? []).join(', ') || '—'],
+        ['Joined', new Date(p.created_at).toLocaleDateString('en-IN')],
+      ].forEach(([l, v]) => { pdf.setFontSize(10); pdf.setFont('helvetica','bold'); pdf.text(`${l}:`, 15, y); pdf.setFont('helvetica','normal'); pdf.text(String(v), 55, y); y += 7; });
+
+      if (checkins.length > 0) {
+        y += 4; hline(); line('CHECK-INS SUMMARY', 15, 13, true); y += 2;
+        const avg = Math.round(checkins.reduce((s,c)=>s+c.jeeva_score,0)/checkins.length);
+        const best = Math.max(...checkins.map(c=>c.jeeva_score));
+        line(`Total: ${checkins.length}  |  Avg Score: ${avg}  |  Best: ${best}`, 15, 10);
+        y += 4;
+        // Table header
+        pdf.setFontSize(9); pdf.setFont('helvetica','bold');
+        ['Date','Score','Mood','Energy','Stress','Sleep','Focus'].forEach((h,i)=>{ pdf.text(h,[15,35,55,78,101,121,141][i],y); });
+        y += 5; hline();
+        pdf.setFont('helvetica','normal');
+        checkins.slice(0,30).forEach(c=>{
+          if(y>270){pdf.addPage();y=20;}
+          const cols=[
+            new Date(c.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'}),
+            String(c.jeeva_score), LABELS.mood[c.mood]??'', LABELS.energy[c.energy]??'',
+            LABELS.stress[c.stress]??'', LABELS.sleep[c.sleep]??'', LABELS.focus[c.focus]??''
+          ];
+          cols.forEach((v,i)=>pdf.text(v,[15,35,55,78,101,121,141][i],y));
+          y+=6;
+        });
+        if(checkins.length>30) { line(`... and ${checkins.length-30} more check-ins (see Excel export)`,15,8); }
+      }
+
+      if (userPrograms.length > 0) {
+        y += 4; hline(); line('PROGRAMS', 15, 13, true); y += 2;
+        userPrograms.forEach(pr => {
+          if(y>270){pdf.addPage();y=20;}
+          pdf.setFontSize(10); pdf.setFont('helvetica','bold'); pdf.text(pr.program_title,15,y);
+          pdf.setFont('helvetica','normal');
+          const att = pr.attendance ? ` | Attendance: ${pr.attendance}` : '';
+          pdf.text(`Registered: ${pr.participating?'Yes':'No'}${att}`,15,y+5); y+=12;
+        });
+      }
+
+      pdf.save(`${selected.name ?? 'user'}_report.pdf`);
+    } catch(e) { console.error(e); }
+    setExporting(false);
+  };
 
   const filtered = users.filter(u => (u.name ?? '').toLowerCase().includes(search.toLowerCase()) || u.id.includes(search));
   const avgScore = checkins.length ? Math.round(checkins.reduce((s,c) => s + c.jeeva_score, 0) / checkins.length) : null;
@@ -137,20 +274,25 @@ const AdminUsersView: React.FC = () => {
       {/* Detail */}
       {selected ? (
         <div style={{ flex: 1, overflowY: 'auto', padding: 28 }}>
-          {/* Back + name */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          {/* Back + name + export buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
             <button onClick={() => setSelected(null)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: C.muted }}>←</button>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{selected.name ?? 'Unknown'}</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, flex: 1 }}>{selected.name ?? 'Unknown'}</h2>
+            <button onClick={exportExcel} disabled={exporting} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: '#DCFCE7', border: '1px solid #86EFAC', fontSize: 12, fontWeight: 700, color: '#16A34A', cursor: 'pointer' }}>
+              📊 Excel
+            </button>
+            <button onClick={exportPDF} disabled={exporting} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: '#FEE2E2', border: '1px solid #FCA5A5', fontSize: 12, fontWeight: 700, color: '#DC2626', cursor: 'pointer' }}>
+              📄 PDF
+            </button>
           </div>
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 0, marginBottom: 20, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: 4, width: 'fit-content' }}>
-            {(['profile','insights','reflections'] as const).map(t => (
+            {(['profile','insights','reflections','programs'] as const).map(t => (
               <button key={t} onClick={() => {
                 setUserTab(t);
-                if (t === 'reflections' && selected && reflections.length === 0) {
-                  loadReflections(selected.id);
-                }
+                if (t === 'reflections' && selected && reflections.length === 0) loadReflections(selected.id);
+                if (t === 'programs' && selected && userPrograms.length === 0) loadUserPrograms(selected.id);
               }} style={{
                 padding: '6px 20px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', textTransform: 'capitalize',
                 background: userTab === t ? C.white : 'transparent',
@@ -171,6 +313,8 @@ const AdminUsersView: React.FC = () => {
                   ['Age', selected.age ? `${selected.age} yrs` : '—'],
                   ['Height', selected.height ? `${cmToFt(selected.height)} (${Math.round(selected.height)} cm)` : '—'],
                   ['Weight', selected.weight ? `${selected.weight.toFixed(1)} kg` : '—'],
+                  ['Role', (selected as UserProfile & { role?: string }).role ?? '—'],
+                  ['Department', (selected as UserProfile & { department?: string }).department ?? '—'],
                   ['Bio', selected.bio ?? '—'],
                   ['Joined', new Date(selected.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })],
                 ].map(([l, v]) => (
@@ -358,6 +502,45 @@ const AdminUsersView: React.FC = () => {
                     </button>
                   )}
                 </>
+              )}
+            </div>
+          )}
+
+          {/* ── Programs Tab ── */}
+          {userTab === 'programs' && (
+            <div>
+              {progLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${C.border}`, borderTopColor: C.accent, animation: 'spin 0.8s linear infinite' }} />
+                </div>
+              ) : userPrograms.length === 0 ? (
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: '40px 20px', textAlign: 'center', color: C.muted, fontSize: 13 }}>
+                  This user has not registered for any programs.
+                </div>
+              ) : (
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px', padding: '10px 16px', background: C.bg, borderBottom: `1px solid ${C.border}` }}>
+                    {['Program', 'Registered', 'Attendance'].map(h => (
+                      <span key={h} style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</span>
+                    ))}
+                  </div>
+                  {userPrograms.map((pr, i) => (
+                    <div key={pr.id} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 120px', padding: '12px 16px', borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.white : C.bg, alignItems: 'center' }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, margin: 0 }}>{pr.program_title}</p>
+                      <span style={{ background: pr.participating ? '#DCFCE7' : '#FEE2E2', color: pr.participating ? '#16A34A' : '#DC2626', border: `1px solid ${pr.participating ? '#86EFAC' : '#FCA5A5'}`, borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, display: 'inline-block' }}>
+                        {pr.participating ? 'Yes' : 'No'}
+                      </span>
+                      <span style={{
+                        background: pr.attendance === 'present' ? '#DCFCE7' : pr.attendance === 'absent' ? '#FEE2E2' : '#F1F5F9',
+                        color: pr.attendance === 'present' ? '#16A34A' : pr.attendance === 'absent' ? '#DC2626' : '#64748B',
+                        border: `1px solid ${pr.attendance === 'present' ? '#86EFAC' : pr.attendance === 'absent' ? '#FCA5A5' : '#E2E8F0'}`,
+                        borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, display: 'inline-block',
+                      }}>
+                        {pr.attendance === 'present' ? '✓ Present' : pr.attendance === 'absent' ? '✗ Absent' : 'Not marked'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}

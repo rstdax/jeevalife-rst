@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { adminDb as db } from './adminFirebase';
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc,
-  doc, query, where, orderBy,
+  doc, query, where,
 } from 'firebase/firestore';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 
 const C = {
   bg: '#F8FAFC', white: '#FFFFFF', border: '#E2E8F0', text: '#0F172A', muted: '#64748B',
@@ -26,7 +28,7 @@ interface Participant {
   user_name?: string; user_role?: string; user_dept?: string;
 }
 
-const EMPTY_FORM = { title: '', organizer: '', date_start: '', date_end: '', venue: '', description: '', status: 'active' as const };
+const EMPTY_FORM: { title: string; organizer: string; date_start: string; date_end: string; venue: string; description: string; status: 'active' | 'expired' } = { title: '', organizer: '', date_start: '', date_end: '', venue: '', description: '', status: 'active' };
 const fmt = (s: string) => s ? new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 const AdminProgramsView: React.FC = () => {
@@ -78,7 +80,8 @@ const AdminProgramsView: React.FC = () => {
   const loadParticipants = async (p: Program) => {
     setSelected(p); setPartLoading(true);
     try {
-      const snap = await getDocs(query(collection(db, 'program_participants'), where('program_id', '==', p.id), orderBy('joined_at', 'desc')));
+      // No orderBy to avoid requiring a composite index
+      const snap = await getDocs(query(collection(db, 'program_participants'), where('program_id', '==', p.id)));
       const parts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Participant));
       const profileSnap = await getDocs(collection(db, 'profiles'));
       const profileMap: Record<string, { name: string; role: string; dept: string }> = {};
@@ -91,8 +94,11 @@ const AdminProgramsView: React.FC = () => {
         pt.user_role = pr?.role ?? '—';
         pt.user_dept = pr?.dept ?? '—';
       });
-      setParticipants(parts.filter(pt => pt.participating));
-    } catch { /* silent */ }
+      // Sort by joined_at in JS instead
+      const filtered = parts.filter(pt => pt.participating);
+      filtered.sort((a, b) => (b.joined_at ?? '').localeCompare(a.joined_at ?? ''));
+      setParticipants(filtered);
+    } catch(e) { console.error('loadParticipants error:', e); }
     setPartLoading(false);
   };
 
@@ -103,6 +109,70 @@ const AdminProgramsView: React.FC = () => {
       setParticipants(prev => prev.map(p => p.id === pt.id ? { ...p, attendance: att } : p));
     } catch { /* silent */ }
     setSavingAtt(null);
+  };
+
+  const downloadExcel = () => {
+    if (!selected || participants.length === 0) return;
+    const rows = [
+      ['Name', 'Role', 'Department', 'Registered', 'Attendance', 'Joined At'],
+      ...participants.map(pt => [
+        pt.user_name ?? '',
+        pt.user_role ?? '',
+        pt.user_dept ?? '',
+        pt.participating ? 'Yes' : 'No',
+        pt.attendance ?? 'Not marked',
+        pt.joined_at ? new Date(pt.joined_at).toLocaleDateString('en-IN') : '',
+      ]),
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    // Column widths
+    ws['!cols'] = [{ wch: 24 }, { wch: 14 }, { wch: 20 }, { wch: 12 }, { wch: 14 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+    XLSX.writeFile(wb, `${selected.title.replace(/\s+/g, '_')}_attendance.xlsx`);
+  };
+
+  const downloadPDF = () => {
+    if (!selected || participants.length === 0) return;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    let y = 18;
+    pdf.setFontSize(16); pdf.setFont('helvetica', 'bold');
+    pdf.text('Program Attendance Report', 15, y); y += 9;
+    pdf.setFontSize(11); pdf.setFont('helvetica', 'normal');
+    pdf.text(`Program: ${selected.title}`, 15, y); y += 6;
+    pdf.text(`Organizer: ${selected.organizer}`, 15, y); y += 6;
+    pdf.text(`Venue: ${selected.venue}`, 15, y); y += 6;
+    const fmtDate = (s: string) => s ? new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    pdf.text(`Dates: ${fmtDate(selected.date_start)} – ${fmtDate(selected.date_end)}`, 15, y); y += 6;
+    pdf.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 15, y); y += 8;
+    // Summary
+    const present = participants.filter(p => p.attendance === 'present').length;
+    const absent = participants.filter(p => p.attendance === 'absent').length;
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Total Registered: ${participants.length}   Present: ${present}   Absent: ${absent}   Not Marked: ${participants.length - present - absent}`, 15, y); y += 8;
+    // Divider
+    pdf.setDrawColor(200, 200, 200); pdf.line(15, y, 195, y); y += 5;
+    // Table header
+    pdf.setFontSize(9); pdf.setFont('helvetica', 'bold');
+    const cols = [15, 65, 100, 135, 162];
+    const headers = ['Name', 'Role', 'Department', 'Registered', 'Attendance'];
+    headers.forEach((h, i) => pdf.text(h, cols[i], y));
+    y += 5; pdf.setDrawColor(200, 200, 200); pdf.line(15, y, 195, y); y += 4;
+    pdf.setFont('helvetica', 'normal');
+    participants.forEach(pt => {
+      if (y > 275) { pdf.addPage(); y = 20; }
+      const attLabel = pt.attendance === 'present' ? 'Present' : pt.attendance === 'absent' ? 'Absent' : '—';
+      const row = [
+        (pt.user_name ?? '').slice(0, 20),
+        (pt.user_role ?? '').slice(0, 14),
+        (pt.user_dept ?? '').slice(0, 18),
+        pt.participating ? 'Yes' : 'No',
+        attLabel,
+      ];
+      row.forEach((v, i) => pdf.text(v, cols[i], y));
+      y += 7;
+    });
+    pdf.save(`${selected.title.replace(/\s+/g, '_')}_attendance.pdf`);
   };
 
   return (
@@ -148,72 +218,96 @@ const AdminProgramsView: React.FC = () => {
             </div>
           </div>
 
-          {/* Participants + Attendance panel */}
+          {/* Participants + Attendance — centered modal */}
           {selected && editingId === null && (
-            <div style={{ width: 380, minWidth: 380, background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, alignSelf: 'flex-start', position: 'sticky', top: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', maxHeight: '85vh', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <span style={{ fontSize: 14, fontWeight: 700 }}>Attendance</span>
-                <button onClick={() => setSelected(null)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, width: 28, height: 28, cursor: 'pointer', color: C.muted }}>✕</button>
-              </div>
-              <p style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>{selected.title}</p>
-              {partLoading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${C.border}`, borderTopColor: C.accent, animation: 'spin 0.8s linear infinite' }} />
-                </div>
-              ) : participants.length === 0 ? (
-                <p style={{ fontSize: 13, color: C.muted, textAlign: 'center', padding: '20px 0' }}>No registrations yet.</p>
-              ) : (
-                <>
-                  {/* Summary */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-                    {[
-                      { label: 'Registered', value: participants.length, color: C.accent, bg: C.accentBg },
-                      { label: 'Present', value: participants.filter(p => p.attendance === 'present').length, color: C.green, bg: C.greenBg },
-                      { label: 'Absent', value: participants.filter(p => p.attendance === 'absent').length, color: C.red, bg: C.redBg },
-                    ].map(s => (
-                      <div key={s.label} style={{ background: s.bg, borderRadius: 8, padding: '10px 12px', textAlign: 'center' }}>
-                        <p style={{ fontSize: 20, fontWeight: 800, color: s.color, margin: 0 }}>{s.value}</p>
-                        <p style={{ fontSize: 10, color: s.color, fontWeight: 600, margin: 0 }}>{s.label}</p>
-                      </div>
-                    ))}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)', padding: 24 }}
+              onClick={e => { if (e.target === e.currentTarget) setSelected(null); }}>
+              <div style={{ width: '100%', maxWidth: 560, background: C.white, border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '85vh', overflowY: 'auto' }}>
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                  <div>
+                    <h2 style={{ fontSize: 17, fontWeight: 700, margin: '0 0 4px' }}>Attendance</h2>
+                    <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{selected.title}</p>
                   </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {participants.length > 0 && (
+                      <>
+                        <button onClick={downloadExcel} style={{ padding: '6px 12px', borderRadius: 7, background: C.greenBg, border: `1px solid ${C.greenBdr}`, fontSize: 12, fontWeight: 700, color: C.green, cursor: 'pointer' }}>
+                          📊 Excel
+                        </button>
+                        <button onClick={downloadPDF} style={{ padding: '6px 12px', borderRadius: 7, background: '#FEE2E2', border: '1px solid #FCA5A5', fontSize: 12, fontWeight: 700, color: C.red, cursor: 'pointer' }}>
+                          📄 PDF
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => setSelected(null)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, width: 32, height: 32, cursor: 'pointer', color: C.muted, fontSize: 15, flexShrink: 0 }}>✕</button>
+                  </div>
+                </div>
 
-                  {/* Participant rows */}
-                  {participants.map(pt => (
-                    <div key={pt.id} style={{ padding: '10px 0', borderBottom: `1px solid ${C.border}` }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
-                          {(pt.user_name ?? 'U').charAt(0).toUpperCase()}
+                {partLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', border: `3px solid ${C.border}`, borderTopColor: C.accent, animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                ) : participants.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: C.muted, fontSize: 13 }}>
+                    <span style={{ fontSize: 36, display: 'block', marginBottom: 12, opacity: 0.3 }}>👥</span>
+                    No registrations yet for this program.
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+                      {[
+                        { label: 'Registered', value: participants.length, color: C.accent, bg: C.accentBg },
+                        { label: 'Present', value: participants.filter(p => p.attendance === 'present').length, color: C.green, bg: C.greenBg },
+                        { label: 'Absent', value: participants.filter(p => p.attendance === 'absent').length, color: C.red, bg: C.redBg },
+                      ].map(s => (
+                        <div key={s.label} style={{ background: s.bg, borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
+                          <p style={{ fontSize: 24, fontWeight: 800, color: s.color, margin: 0 }}>{s.value}</p>
+                          <p style={{ fontSize: 11, color: s.color, fontWeight: 600, margin: 0 }}>{s.label}</p>
                         </div>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{pt.user_name}</p>
-                          <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>{pt.user_role} · {pt.user_dept}</p>
-                        </div>
-                        {pt.attendance && (
-                          <span style={{ marginLeft: 'auto', padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700, background: pt.attendance === 'present' ? C.greenBg : C.redBg, color: pt.attendance === 'present' ? C.green : C.red }}>
-                            {pt.attendance === 'present' ? 'Present' : 'Absent'}
-                          </span>
-                        )}
-                      </div>
-                      {/* Attendance buttons */}
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        {(['present', 'absent', null] as const).map(att => (
-                          <button key={String(att)} onClick={() => updateAttendance(pt, att)}
-                            disabled={savingAtt === pt.id}
-                            style={{
-                              flex: 1, padding: '5px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                              background: pt.attendance === att ? (att === 'present' ? C.greenBg : att === 'absent' ? C.redBg : '#F1F5F9') : C.bg,
-                              color: pt.attendance === att ? (att === 'present' ? C.green : att === 'absent' ? C.red : C.muted) : C.muted,
-                              border: `1px solid ${pt.attendance === att ? (att === 'present' ? C.greenBdr : att === 'absent' ? C.redBdr : C.border) : C.border}`,
-                            }}>
-                            {att === null ? 'Clear' : att === 'present' ? '✓ Present' : '✗ Absent'}
-                          </button>
-                        ))}
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </>
-              )}
+
+                    {/* Participant rows */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                      {participants.map((pt, idx) => (
+                        <div key={pt.id} style={{ padding: '14px 0', borderBottom: `1px solid ${C.border}`, background: idx % 2 === 0 ? C.white : C.bg }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: C.accentBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
+                              {(pt.user_name ?? 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{pt.user_name}</p>
+                              <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>{pt.user_role} · {pt.user_dept}</p>
+                            </div>
+                            {pt.attendance && (
+                              <span style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: pt.attendance === 'present' ? C.greenBg : C.redBg, color: pt.attendance === 'present' ? C.green : C.red, border: `1px solid ${pt.attendance === 'present' ? C.greenBdr : C.redBdr}` }}>
+                                {pt.attendance === 'present' ? '✓ Present' : '✗ Absent'}
+                              </span>
+                            )}
+                          </div>
+                          {/* Attendance buttons */}
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            {(['present', 'absent', null] as const).map(att => (
+                              <button key={String(att)} onClick={() => updateAttendance(pt, att)}
+                                disabled={savingAtt === pt.id}
+                                style={{
+                                  flex: 1, padding: '7px 10px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                                  background: pt.attendance === att ? (att === 'present' ? C.greenBg : att === 'absent' ? C.redBg : C.bg) : C.bg,
+                                  color: pt.attendance === att ? (att === 'present' ? C.green : att === 'absent' ? C.red : C.muted) : C.muted,
+                                  border: `1px solid ${pt.attendance === att ? (att === 'present' ? C.greenBdr : att === 'absent' ? C.redBdr : C.border) : C.border}`,
+                                }}>
+                                {att === null ? 'Clear' : att === 'present' ? '✓ Present' : '✗ Absent'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
